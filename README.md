@@ -176,12 +176,12 @@ The user may provide intermediate files as a way to either kickstart AA from an 
 
 AA generates 4 types of output files. 1 summary file and 3 files per amplicon:
 
-| File name | Description |
-| --------- | ----------- |
-| `{out}_summary.txt` | This file includes a summary for all amplicons detected by AA.|
-| `{out}_amplicon{id}_graph.txt` | A text file for each amplicon listing the edges in the breakpoint graph, their categorization (sequence, discordant, concordant, source) and their copy counts.|
-| `{out}_amplicon{id}_cycle.txt` | A text file for each amplicon listing the simple cycles and their copy counts.|
-| `{out}_amplicon{id}.png/pdf` | A PNG/PDF image file displaying the SV view of AA.|
+| File name                       | Description |
+|---------------------------------| ----------- |
+| `{out}_summary.txt`             | This file includes a summary for all amplicons detected by AA.|
+| `{out}_amplicon{id}_graph.txt`  | A text file for each amplicon listing the edges in the breakpoint graph, their categorization (sequence, discordant, concordant, source) and their copy counts.|
+| `{out}_amplicon{id}_cycles.txt` | A text file for each amplicon listing the simple cycles and their copy counts.|
+| `{out}_amplicon{id}.png/pdf`    | A PNG/PDF image file displaying the SV view of AA.|
 
 
 ## File Formats
@@ -215,7 +215,7 @@ The edges in the section correspond to 2 positions (breakpoint vertices) in the 
     5. HomologySizeIfAvailable(<0ForInsertions): Size of homology at the breakpoint edge in terms of number of basepairs detected using the split read alignment with the largest homology. If an insertion is detected then this field is set to negative of the size of the insertion. If split reads are not found, this column is set to `None`.
     6. Homology/InsertionSequence: Sequence of the homologous sequence or insertion at the breakpoint. If split reads are not found, this column is set to `None`. If the size is `0`, then this column is empty.
 
-### 3. Cycles files `{out}_amplicon{id}_cycle.txt`
+### 3. Cycles files `{out}_amplicon{id}_cycles.txt`
 This file describes the amplicon structure predicted by AA in the form of simple cycles. This file consists of 3 sections where the first word is a keyword represting the section:
 1. Intervals section: List of intervals in amplicon. Tab-separated fields:
     * `Interval`: keyword
