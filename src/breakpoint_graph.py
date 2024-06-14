@@ -435,10 +435,10 @@ class breakpoint_graph(abstract_graph):
             while v2 != hce[1].v1: #and not v2 in s2Set:
                 # print hce[1].v1, v2, s2Set
                 s2Set.add(v2)
-                if v2 not in hdict:
-                    print(str(v2), str(hce[1].v1), str(tc))
-                    for ee in hce[1].v1.elist:
-                        print(str(ee), wehc[ee])
+                # if v2 not in hdict:
+                #     print(str(v2), str(hce[1].v1), str(tc))
+                #     for ee in hce[1].v1.elist:
+                #         print(str(ee), wehc[ee])
                 tc = hdict[v2][1] + tc
                 v2 = hdict[v2][2]
                 s2Set.add(v2)

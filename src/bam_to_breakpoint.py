@@ -2252,7 +2252,6 @@ class bam_to_breakpoint():
         logging.info("#TIME " + '%.3f\t'%(time() - self.tstart) + " Optimizing graph copy number flow")
         C = self.median_coverage()[0] / 2
         logging.debug("C (haploid coverage) = " +  str(C))
-        # G = new_graph
 
         seqlist = [e for e in new_graph.es.values() if e.edge_type == 'sequence']
         n = len(seqlist)
@@ -2389,18 +2388,19 @@ class bam_to_breakpoint():
 
         if runmode == 'BPGRAPH':
             return
-        logging.info("#TIME " + '%.3f\t'%(time() - self.tstart) + " Plotting SV View")
 
         interval_index = 1
         for i in ilist:
             cycle_logger.info("Interval\t" + '\t'.join([str(interval_index), i.chrom, str(i.start), str(i.end)]))
             interval_index += 1
 
+        logging.info("#TIME " + '%.3f\t'%(time() - self.tstart) + " Decomposing cycles")
         new_graph.cycle_decomposition(wehc, s)
 
 
     # Plot coverage, meanshift copy count estimates and discordant edges in interval
     def plot_segmentation(self, ilist, amplicon_name, segments=[], scale_list=[], eilist=None, font='small'):
+        logging.info("#TIME " + '%.3f\t'%(time() - self.tstart) + " Plotting SV view")
         fighsize = 12
         figvsize = 5
         if font == 'large':
