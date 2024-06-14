@@ -6,6 +6,7 @@ import logging
 import sys
 
 import mosek
+import numpy as np
 
 # Check Mosek version
 mosek_ver = mosek.Env.getversion()
@@ -98,7 +99,8 @@ def call_mosek_scopt(n, m, asub, aval, coeff_c, coeff_f, coeff_g, const_h):
             task.solutionsummary(mosek.streamtype.log)
 
             if task.getsolsta(mosek.soltype.itr) != mosek.solsta.optimal:
-                raise Exception("Failed to solve to optimality. Solution status {}".format(task.getsolsta(mosek.soltype.itr)))
+                print("Failed to solve to optimality. Solution status {}. Returning initial coefficients.".format(task.getsolsta(mosek.soltype.itr)))
+                return np.array(coeff_c)
 
             res = [ 0.0 ] * numvar
             task.getsolutionslice(mosek.soltype.itr, mosek.solitem.xx, 0, numvar, res)
@@ -149,10 +151,12 @@ def call_mosek_acc(n, m, asub, aval, coeff_c, coeff_f):
         task.optimize()
         task.solutionsummary(mosek.streamtype.log)
         
-        if task.getsolsta(mosek.soltype.itr) != mosek.solsta.optimal:
-            raise Exception("Failed to solve to optimality. Solution status {}".format(task.getsolsta(mosek.soltype.itr)))
-
-        return task.getxxslice(mosek.soltype.itr, 0, n + m)
+        solsta = task.getsolsta(mosek.soltype.itr)
+        if solsta in [mosek.solsta.optimal, mosek.solsta.near_optimal]:
+            return task.getxxslice(mosek.soltype.itr, 0, n + m)
+        else:
+            print("Failed to solve to optimality. Solution status: {}. Returning initial coefficients.".format(str(solsta)))
+            return np.array(coeff_c)
 
 
 '''
@@ -191,7 +195,8 @@ def call_mosek_fusion(n, m, asub, aval, coeff_c, coeff_f):
         M.solve()
 
         if M.getPrimalSolutionStatus() != SolutionStatus.Optimal:
-            raise Exception("Failed to solve to optimality. Solution status {}".format(M.getPrimalSolutionStatus()))
+            print("Failed to solve to optimality. Solution status {}. Returning initial coefficients.".format(M.getPrimalSolutionStatus()))
+            return np.array(coeff_c)
 
         return x.level()
 
