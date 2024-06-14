@@ -151,12 +151,11 @@ def call_mosek_acc(n, m, asub, aval, coeff_c, coeff_f):
         task.optimize()
         task.solutionsummary(mosek.streamtype.log)
         
-        solsta = task.getsolsta(mosek.soltype.itr)
-        if solsta in [mosek.solsta.optimal, mosek.solsta.near_optimal]:
-            return task.getxxslice(mosek.soltype.itr, 0, n + m)
-        else:
-            print("Failed to solve to optimality. Solution status: {}. Returning initial coefficients.".format(str(solsta)))
+        if task.getsolsta(mosek.soltype.itr) != mosek.solsta.optimal:
+            print("Failed to solve to optimality. Solution status {}".format(task.getsolsta(mosek.soltype.itr)))
             return np.array(coeff_c)
+
+        return task.getxxslice(mosek.soltype.itr, 0, n + m)
 
 
 '''
