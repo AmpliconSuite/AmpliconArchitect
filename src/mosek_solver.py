@@ -57,7 +57,7 @@ def call_mosek(n, m, asub, aval, coeff_c, coeff_f, coeff_g, const_h):
         # all input data to a JSON file so they can be loaded
         # to recreate the MOSEK problem in a stand-alone way.
         mosek_logger.error("Error when using MOSEK: {}".format(e))
-        print("Error when using MOSEK: {}".format(e))
+        logging.error("Error when using MOSEK: {}".format(e))
         filename = save_mosek_input(n, m, asub, aval, coeff_c, coeff_f, coeff_g, const_h)        
         mosek_logger.info("Saved MOSEK inputs to {}. Submit that file to support to reproduce the issue.".format(filename))
         raise e
@@ -99,7 +99,10 @@ def call_mosek_scopt(n, m, asub, aval, coeff_c, coeff_f, coeff_g, const_h):
             task.solutionsummary(mosek.streamtype.log)
 
             if task.getsolsta(mosek.soltype.itr) != mosek.solsta.optimal:
-                print("Failed to solve to optimality. Solution status {}. Returning initial coefficients.".format(task.getsolsta(mosek.soltype.itr)))
+                logging.error("Failed to solve to optimality. Solution status {}. Returning initial coefficients.".format(task.getsolsta(mosek.soltype.itr)))
+                filename = save_mosek_input(n, m, asub, aval, coeff_c, coeff_f, coeff_g, const_h)
+                mosek_logger.info(
+                    "Saved MOSEK inputs to {}. Submit that file to support to reproduce the issue.".format(filename))
                 return np.array(coeff_c)
 
             res = [ 0.0 ] * numvar
@@ -150,9 +153,12 @@ def call_mosek_acc(n, m, asub, aval, coeff_c, coeff_f):
         task.putdouparam(mosek.dparam.intpnt_co_tol_near_rel, 1e+5)
         task.optimize()
         task.solutionsummary(mosek.streamtype.log)
-        
+
         if task.getsolsta(mosek.soltype.itr) != mosek.solsta.optimal:
-            print("Failed to solve to optimality. Solution status {}".format(task.getsolsta(mosek.soltype.itr)))
+            logging.error("Failed to solve to optimality. Solution status {}".format(task.getsolsta(mosek.soltype.itr)))
+            filename = save_mosek_input(n, m, asub, aval, coeff_c, coeff_f)
+            mosek_logger.info(
+                "Saved MOSEK inputs to {}. Submit that file to support to reproduce the issue.".format(filename))
             return np.array(coeff_c)
 
         return task.getxxslice(mosek.soltype.itr, 0, n + m)
@@ -194,7 +200,10 @@ def call_mosek_fusion(n, m, asub, aval, coeff_c, coeff_f):
         M.solve()
 
         if M.getPrimalSolutionStatus() != SolutionStatus.Optimal:
-            print("Failed to solve to optimality. Solution status {}. Returning initial coefficients.".format(M.getPrimalSolutionStatus()))
+            logging.error("Failed to solve to optimality. Solution status {}. Returning initial coefficients.".format(M.getPrimalSolutionStatus()))
+            filename = save_mosek_input(n, m, asub, aval, coeff_c, coeff_f)
+            mosek_logger.info(
+                "Saved MOSEK inputs to {}. Submit that file to support to reproduce the issue.".format(filename))
             return np.array(coeff_c)
 
         return x.level()
@@ -202,7 +211,7 @@ def call_mosek_fusion(n, m, asub, aval, coeff_c, coeff_f):
 
 # Debug functions. Dumping input data.
 mosek_save_num = 1
-def save_mosek_input(n, m, asub, aval, coeff_c, coeff_f, coeff_g, const_h):
+def save_mosek_input(n, m, asub, aval, coeff_c, coeff_f, coeff_g=None, const_h=None):
     import json
     global mosek_save_num
     filename = "mosekinput-{}.json".format(mosek_save_num)
