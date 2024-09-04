@@ -152,7 +152,7 @@ if args.random_seed:
     global_names.SEED = None
 
 outName = args.outName[0]
-logging.basicConfig(filename=outName + '.log',level=logging.DEBUG)
+logging.basicConfig(filename=outName + '.log',level=logging.DEBUG, filemode='w')
 logging.getLogger('fontTools.subset').level = logging.WARN
 logging.getLogger('fontTools.ttLib').level = logging.WARN
 logging.getLogger('matplotlib.backends').level = logging.WARN
