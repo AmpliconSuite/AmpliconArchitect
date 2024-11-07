@@ -293,7 +293,7 @@ class breakpoint_graph(abstract_graph):
                 self.copy_count[e] = float(l[2])
         return
 
-    def djikstra_distance(self, v1, v2, min_count=0):
+    def dijkstra_distance(self, v1, v2, min_count=0):
         """Find shortest genomic path and distance between genomic locations (including strand) in the breakpoint graph with copy count = min_count.
         Return none if not found
         Return format:

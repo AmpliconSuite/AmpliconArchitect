@@ -107,7 +107,7 @@ def getRelChrs(CHROMS):
 	chrList = sorted(list(chrSet))
 	return chrList
 
-#takes a list of 2-tuples contaning numeric values and checks for overlap in the tuples
+#takes a list of 2-tuples containing numeric values and checks for overlap in the tuples
 def checkOverlappingTuples(tupList,tupToAdd):
 	for i in tupList:
 		if tupToAdd[0] >= i[0] and tupToAdd[0] <= i[1]:

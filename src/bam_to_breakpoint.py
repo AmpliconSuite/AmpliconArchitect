@@ -2365,7 +2365,7 @@ class bam_to_breakpoint():
         else:
             summary_logger.info("AverageAmplifiedCopyCount = 2")
         summary_logger.info("#Chromosomes = " + str(len(set([i.chrom for i in ilist]))))
-        summary_logger.info("#SeqenceEdges = " + str(n))
+        summary_logger.info("#SequenceEdges = " + str(n))
         summary_logger.info("#BreakpointEdges = " + str(len(kbpe)))
         summary_logger.info("#CoverageShifts = " + str(len(all_msv_cat)))
         summary_logger.info("#MeanshiftSegmentsCopyCount>5 = " + str(len([v for v in msv_diff.values() if v > 5])))

@@ -94,7 +94,7 @@ parser.add_argument('--sensitivems', dest='sensitivems',
                     action='store', type=str, default='False')
 parser.add_argument('--plotstyle', dest='plotstyle',
                     help="Values: [small large, all_amplicons]. \"small\": small font, \"all_amplicons\": display a large"
-                         " number of intervals in a single plot, recommeded for visualizing multiple amplicons in CLUSTERED"
+                         " number of intervals in a single plot, recommended for visualizing multiple amplicons in CLUSTERED"
                          " mode. Default: \"large\"", metavar='STR',
                     action='store', type=str, default="small")
 parser.add_argument('--ref', dest='ref',
@@ -216,7 +216,7 @@ except:
     logging.warning("#TIME " + '%.3f\t'%(time() - TSTART) + "unable to set AA_DATA_REPO variable. Setting to working directory")
     DATA_REPO = '.'
 if DATA_REPO == '.' or DATA_REPO == '':
-    logging.warning("#TIME " + '%.3f\t'%(time() - TSTART) + "AA_DATA_REPO not set or empy. Setting to working directory")
+    logging.warning("#TIME " + '%.3f\t'%(time() - TSTART) + "AA_DATA_REPO not set or empty. Setting to working directory")
     DATA_REPO = '.'
 
 # check if there are files from previous runs of the same name in the output directory. If so, print a warning.

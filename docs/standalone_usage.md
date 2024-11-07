@@ -1,6 +1,6 @@
 ## Installing AA as a standalone tool
 
-This is not recommended, as the AA module will be seperated from the AmpliconSuite-pipeline tools that prepare and filter its inputs.
+This is not recommended, as the AA module will be separated from the AmpliconSuite-pipeline tools that prepare and filter its inputs.
 
 ### Installing from GitHub source code:
 
@@ -28,7 +28,7 @@ sudo apt-get install python2
 wget https://bootstrap.pypa.io/pip/2.7/get-pip.py
 sudo python2 get-pip.py
 ```
-3. **Python3 packages**: Note that [pysam](https://github.com/pysam-developers/pysam) verion 0.9.0  or higher is required. Flask is optional.
+3. **Python3 packages**: Note that [pysam](https://github.com/pysam-developers/pysam) version 0.9.0  or higher is required. Flask is optional.
 
 `pip3 install pysam Cython numpy scipy matplotlib future mosek Flask`
 
@@ -43,7 +43,7 @@ Note that 0.15.2 is the last version of pysam which appears to support pip2 inst
 mkdir -p $HOME/mosek/
 # Then please obtain license from https://www.mosek.com/products/academic-licenses/ or https://www.mosek.com/try/ and place in $HOME/mosek/
 ```
-If you happen to be using the commerical version of the Mosek license (this is uncommon as Mosek is free for academic use), you will need the version which supports both PTON and PTS functions. 
+If you happen to be using the commercial version of the Mosek license (this is uncommon as Mosek is free for academic use), you will need the version which supports both PTON and PTS functions. 
 
 5. (Optional) Arial font for matplotlib:
 
@@ -97,6 +97,6 @@ This format of visualization makes it easy to discern the segments in the struct
 - Operations:
     - Show-hide cyles by name, copy count threshold
     - Merge cycles with a common segment: Select cycle names and ments rank (NOT the ID displayed) in the order of segments played. For closed cycles, first segment rank is 0; for open walks, For n walks, first segment rank is 1 and so on.
-    - Pivot cycle around inverted duplication: Pivot the portion of  cycle that connects two reversed occurences of a duplicated ment without changing any genomic connections.
+    - Pivot cycle around inverted duplication: Pivot the portion of  cycle that connects two reversed occurrences of a duplicated meant without changing any genomic connections.
     - Undo last edit: Go back to previous state.
 
