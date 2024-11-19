@@ -43,7 +43,7 @@ except:
     logging.warning("#TIME " + '%.3f\t'%(time() - TSTART) + " Unable to set AA_DATA_REPO variable. Setting to working directory")
     DATA_REPO = '.'
 if DATA_REPO == '.' or DATA_REPO == '':
-    logging.warning("#TIME " + '%.3f\t'%(time() - TSTART) + " AA_DATA_REPO not set or empy. Setting to working directory")
+    logging.warning("#TIME " + '%.3f\t'%(time() - TSTART) + " AA_DATA_REPO not set or empty. Setting to working directory")
     DATA_REPO = '.'
 
 REF_files = defaultdict(lambda: '', {})

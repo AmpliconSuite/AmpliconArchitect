@@ -115,7 +115,7 @@ def selectIntSite(low_comp_on):
 		fragSeq = seqD[onChr][chrNormStart:chrNormEnd]
 		extSeq = seqD[onChr][chrNormStart-flankingLength:chrNormEnd+flankingLength]
 
-		#disallow ambiguos bases
+		#disallow ambiguous bases
 		#if float(fragSeq.count('N'))/len(fragSeq) > 0.00:
 		#	continue
 		if "N" in extSeq:
@@ -180,7 +180,7 @@ def selectNBreakPoints(epiSeq,safeZone,vSLen,epiInsSite):
 
 
 	if not safeSeg:
-		sys.stderr.write("Safe zone error in breakpoint genertion. Quitting.\n")
+		sys.stderr.write("Safe zone error in breakpoint generation. Quitting.\n")
 		sys.exit()
 
 	#breakL.append(len(epiSeq)-vSLen)
@@ -213,7 +213,7 @@ def selectBreakPoints(epiSeq,safeZone,vSLen,epiInsSite):
 
 		#check if it covered the epiInsSite
 	if not safeSeg:
-		sys.stderr.write("Safe zone error in breakpoint genertion. Quitting.\n")
+		sys.stderr.write("Safe zone error in breakpoint generation. Quitting.\n")
 		sys.exit()
 
 	breakL.append(len(epiSeq)-vSLen)
@@ -346,7 +346,7 @@ def getRandHumanSegs(num_human_segs,priorWindows,windowSizes):
 		fragSeq = seqD[onChr][chrNormStart:chrNormEnd]
 		extSeq = seqD[onChr][chrNormStart-2000:chrNormEnd+2000]
 
-		#disallow ambiguos bases
+		#disallow ambiguous bases
 		#if float(fragSeq.count('N'))/len(fragSeq) > 0.00:
 		#	continue
 		if "N" in extSeq:
