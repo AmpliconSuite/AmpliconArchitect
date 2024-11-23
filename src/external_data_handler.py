@@ -170,6 +170,5 @@ def sv_vcf_to_bplist(vcf_file, filter_by_pass=True):
                 bref_rev.edge_type = bref.type()
                 vcf_dnlist.append((bref_rev, support))
 
-
-    logging.info("Read " + str(len(vcf_dnlist)) + " SV calls from " + vcf_file)
+    logging.info("Read " + str(len(vcf_dnlist)//2) + " SV calls from " + vcf_file)
     return vcf_dnlist

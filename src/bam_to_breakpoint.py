@@ -62,6 +62,17 @@ np.seterr(divide='ignore', invalid='ignore')
 TSTART = global_names.TSTART
 
 
+# Methods to find coverage and other statistics of bam file
+def fetch(bamfile, c, s, e, downsample_ratio):
+    chr_length = hg.chrLen[hg.chrNum(c)]
+    s, e = sorted((max(1, s), max(1, e)))  # Ensure s <= e and both are >= 1
+    s, e = min(s, chr_length - 1), min(e, chr_length - 1)
+
+    for a in bamfile.fetch(c, s, e + 1):
+        if downsample_ratio == 1 or (hash(a.query_name) % 100) / 100 < downsample_ratio:
+            yield a
+
+
 class breakpoint_cluster:
     def __init__(self, edge, bamfile, max_insert):
         self.edge = edge
@@ -80,7 +91,9 @@ class bam_to_breakpoint():
         self.insert_size = insert_size
         self.num_sdevs = num_sdevs
         self.read_length = read_length
-        self.secondary_index=secondary_index
+        self.mate_cache= {}
+        self.mate_cache_tries = 0
+        self.mate_cache_hits = 0
         self.gc_scale = defaultdict(lambda: 1.0) #self.gc_scaling()
         self.gc_set = False
         self.ms_window_size = 10000
@@ -134,28 +147,6 @@ class bam_to_breakpoint():
         if pair_support != -1:
             self.pair_support = pair_support
 
-    # Methods to find coverage and other statistics of bam file
-    def fetch(self, c, s, e):
-        if s > e:
-            (s, e) = (e, s)
-        if s < 0:
-            s = 1
-        if s > hg.chrLen[hg.chrNum(c)]:
-            s = hg.chrLen[hg.chrNum(c)] - 1
-            e = hg.chrLen[hg.chrNum(c)] - 1
-        if e < 0:
-            s = 1
-            e = 1
-        if e > hg.chrLen[hg.chrNum(c)]:
-            e = hg.chrLen[hg.chrNum(c)] - 1
-        if self.downsample_ratio == 1:
-            for a in self.bamfile.fetch(c, s, e + 1):
-                    yield a
-        else:                    
-            for a in self.bamfile.fetch(c, s, e + 1):
-                random.seed(a.query_name)
-                if random.uniform(0, 1) < self.downsample_ratio:
-                        yield a
 
     def interval_coverage(self, i, clip=False, gcc=False):
         call_args = (i.chrom, i.start, i.end, clip, gcc)
@@ -166,10 +157,10 @@ class bam_to_breakpoint():
             wc_corrected = 0
             j = 0
             for w in wc_raw:
-                alist = [a for a in self.fetch(w[0].chrom, w[0].start, w[0].end)]
+                alist_len = sum(1 for _ in fetch(self.bamfile, w[0].chrom, w[0].start, w[0].end, self.downsample_ratio))
                 wc_corrected += w[0].size() * w[1] / self.gc_scaling()[int(w[0].gc_content() * 10) / 10.0]
-                if w[0].size() * w[1] / self.gc_scaling()[int(w[0].gc_content() * 10)  / 10.0]  > 10 * len(alist) * self.read_length:
-                    print(str(i).strip(), str(w[0]).strip(), wc_corrected, len(alist), w[1], self.gc_scaling()[int(w[0].gc_content() * 10)  / 10.0],
+                if w[0].size() * w[1] / self.gc_scaling()[int(w[0].gc_content() * 10)  / 10.0]  > 10 * alist_len * self.read_length:
+                    print(str(i).strip(), str(w[0]).strip(), wc_corrected, alist_len, w[1], self.gc_scaling()[int(w[0].gc_content() * 10)  / 10.0],
                           w[0].gc_content(), w[0].sequence())
                     j += 1
                     if j > 100:
@@ -195,8 +186,8 @@ class bam_to_breakpoint():
             self.interval_coverage_calls[call_args] = icc
             return self.interval_coverage_calls[call_args]
         else:
-            alist_len = len([a for a in self.fetch(i.chrom, s2, e2)
-                if not a.is_unmapped and a.reference_end - 1 <= e2 and a.mapping_quality > self.mapping_quality_cutoff])
+            alist_len = sum(1 for a in fetch(self.bamfile, i.chrom, s2, e2, self.downsample_ratio)
+                if not a.is_unmapped and a.reference_end - 1 <= e2 and a.mapping_quality > self.mapping_quality_cutoff)
             self.interval_coverage_calls[call_args] = alist_len * self.read_length / max(1.0, float(e2 - s2 + 1))
             return self.interval_coverage_calls[call_args]
 
@@ -307,8 +298,8 @@ class bam_to_breakpoint():
                 (c,p) = hg.chrPos(newpos)
                 if c not in self.bamfile.references or p < 10000 or hg.chrLen[hg.chrNum(c)] < p + 10000 or len(hg.interval_list([hg.interval(c, p, p+10000)]).intersection(hg.conserved_regions, extend=10000)) > 0 or len(hg.interval_list([hg.interval(c, p, p+10000)]).intersection(hg.centromere_list, extend=10000)) > 0:
                     continue
-                read_length += [a.infer_query_length(always=False) for a in self.fetch(c, p, p+10000) if not a.is_unmapped]
-                insert_size += [a.template_length for a in self.fetch(c, p, p+10000) if a.is_proper_pair and not a.is_reverse and a.template_length < 10000 and a.template_length > 0]
+                read_length += [a.infer_query_length(always=False) for a in fetch(self.bamfile, c, p, p+10000, self.downsample_ratio) if not a.is_unmapped]
+                insert_size += [a.template_length for a in fetch(self.bamfile, c, p, p+10000, self.downsample_ratio) if a.is_proper_pair and not a.is_reverse and a.template_length < 10000 and a.template_length > 0]
                 iteri += 1
             self.read_length = np.average(read_length)
             self.insert_size = np.average(insert_size)
@@ -787,30 +778,32 @@ class bam_to_breakpoint():
 
     def interval_crossing_arcs(self, chrom, start, end, strand, ilist):
             if strand == -1:
-                return [a for a in self.fetch(chrom, max(0, start), min(end, hg.chrLen[hg.chrNum(chrom)]))
-                        if not a.is_unmapped and a.is_reverse
-                        and (a.mate_is_unmapped or a.next_reference_id == -1 or len(ilist.intersection([hg.interval(a.next_reference_name, a.next_reference_start, a.next_reference_start)])) == 0)]
+                return [a for a in fetch(self.bamfile, chrom, max(0, start), min(end, hg.chrLen[hg.chrNum(chrom)]), self.downsample_ratio)
+                        if not a.is_unmapped and a.is_reverse and
+                        (a.mate_is_unmapped or a.next_reference_id == -1 or len(ilist.intersection([hg.interval(a.next_reference_name, a.next_reference_start, a.next_reference_start)])) == 0)
+                        ]
             else:
-                return [a for a in self.fetch(chrom, max(0, start), min(end, hg.chrLen[hg.chrNum(chrom)]))
-                        if not a.is_unmapped and not a.is_reverse 
-                        and (a.mate_is_unmapped or a.next_reference_id == -1 or len(ilist.intersection([hg.interval(a.next_reference_name, a.next_reference_start, a.next_reference_start)])) == 0)]
+                return [a for a in fetch(self.bamfile, chrom, max(0, start), min(end, hg.chrLen[hg.chrNum(chrom)]), self.downsample_ratio)
+                        if not a.is_unmapped and not a.is_reverse and
+                        (a.mate_is_unmapped or a.next_reference_id == -1 or len(ilist.intersection([hg.interval(a.next_reference_name, a.next_reference_start, a.next_reference_start)])) == 0)
+                        ]
 
     # Methods to find breakpoint edges in amplicon
-    def get_mates(self, a):
+    def get_mates(self, a, relevant_read_names):
         gmt = time()
-        self.get_mates_num_calls += 1
-        try:
-            miter = self.secondary_index.find(a.query_name)
-            retval = [m for m in miter if m.is_read1 != a.is_read1]
-            self.get_mates_time += time() - gmt
-            return retval
-        except:
-            # print time(), 'get_mates', str(a)
-            retval = [a2 for a2 in self.fetch(a.next_reference_name, a.next_reference_start, a.next_reference_start + 1) if a2.query_name == a.query_name and a2.is_read1 != a.is_read1]
-            # retval = [self.bamfile.mate(a)]
-            # print time(), 'got_mates'
-            self.get_mates_time += time() - gmt
-            return retval
+        self.mate_cache_tries+=1
+        if (a.query_name, not a.is_read1) not in self.mate_cache:
+            padding = 100000
+            for curr in fetch(self.bamfile, a.next_reference_name, a.next_reference_start - padding, a.next_reference_start + padding, self.downsample_ratio):
+                if curr.query_name in relevant_read_names:
+                    self.mate_cache[(curr.query_name, curr.is_read1)] = curr
+
+        else:
+            self.mate_cache_hits+=1
+
+
+        self.get_mates_time += time() - gmt
+        return self.mate_cache[(a.query_name, not a.is_read1)]
 
     def pair_support_count(self, chrom, position, strand, meanshift, foldup=False, sensitivems=True):
         #str(hg.interval(f[0][0][0].chrom, f[0][0][0].start, f[0][-1][0].end)), f[1], f[2]
@@ -839,15 +832,13 @@ class bam_to_breakpoint():
         pmincount = mc[11]
         if pcount < mc[11]:
             pcount = pmincount
-        return pcount 
+        return pcount
 
     def concordant_edge(self, v, bp_margin=0):
         if v.pos == 0:
             return (None, [])
         elif v.strand == 1:
-            dlist = [a for a in self.fetch(v.chrom,
-                                                   max(1, v.pos - self.max_insert),
-                                                   v.pos)
+            dlist = [a for a in fetch(self.bamfile, v.chrom, max(1, v.pos - self.max_insert), v.pos, self.downsample_ratio)
                      if not a.is_unmapped and not a.is_reverse and a.is_proper_pair
                      and a.next_reference_name == v.chrom and a.next_reference_start >= v.pos and a.reference_start < v.pos - bp_margin
                      and a.next_reference_start < a.reference_start + self.max_insert - self.read_length]
@@ -857,9 +848,7 @@ class bam_to_breakpoint():
                 logging.debug("#TIME " + '%.3f\t'%(time() - TSTART) + " concordant edges " + str(v) + " " + str(len(dlist)))
                 return (breakpoint_edge(v, v2), dlist)
         else:
-            dlist = [a for a in self.fetch(v.chrom,
-                                                   max(1, v.pos - self.max_insert),
-                                                   v.pos)
+            dlist = [a for a in fetch(self.bamfile, v.chrom, max(1, v.pos - self.max_insert), v.pos, self.downsample_ratio)
                      if not a.is_reverse and a.is_proper_pair and not a.is_unmapped
                      and a.next_reference_name == v.chrom and a.next_reference_start >= v.pos and a.reference_start < v.pos - bp_margin
                      and a.next_reference_start < a.reference_start + self.max_insert - self.read_length]
@@ -874,22 +863,19 @@ class bam_to_breakpoint():
     def foldup_count(self, chrom, position, strand, cdiff=-1):
         interval = hg.interval(chrom, max(1, position - self.ms_window_size), min(hg.chrLen[hg.chrNum(chrom)], position + self.ms_window_size))
         if strand == 1:
-            dlist = [a for a in self.fetch(interval.chrom,
-                                                   interval.start,
-                                                   interval.end)
+            dlist_count = sum(1 for a in fetch(self.bamfile, interval.chrom, interval.start, interval.end, self.downsample_ratio)
                      if not a.is_unmapped and not a.is_reverse and a.is_paired
                      and not a.is_proper_pair and not a.mate_is_unmapped
                      and not a.mate_is_reverse and a.reference_name == a.next_reference_name
-                     and abs(a.next_reference_start - a.reference_start) < 100000]#self.ms_window_size]
+                     and abs(a.next_reference_start - a.reference_start) < 100000) #self.ms_window_size]
         else:
-            dlist = [a for a in self.fetch(interval.chrom,
-                                                   interval.start,
-                                                   interval.end)
+            dlist_count = sum(1 for a in fetch(self.bamfile, interval.chrom, interval.start, interval.end, self.downsample_ratio)
                      if not a.is_unmapped and a.is_reverse and a.is_paired
                      and not a.is_proper_pair and not a.mate_is_unmapped
                      and a.mate_is_reverse and a.reference_name == a.next_reference_name
-                     and abs(a.next_reference_start - a.reference_start) < 100000]#self.ms_window_size]
-        return len(dlist)
+                     and abs(a.next_reference_start - a.reference_start) < 100000) #self.ms_window_size]
+
+        return dlist_count
 
 
     def refine_discordant_edge(self, e):
@@ -898,8 +884,8 @@ class bam_to_breakpoint():
         v2min = max(0, (e.v2.pos - self.max_insert + self.read_length if e.v2.strand == 1 else e.v2.pos) - 1)
         v1max = min(e.v1.pos + self.max_insert - self.read_length if e.v1.strand == -1 else e.v1.pos, hg.chrLen[hg.chrNum(e.v1.chrom)]) - 1
         v2max = min(e.v2.pos + self.max_insert - self.read_length if e.v2.strand == -1 else e.v2.pos, hg.chrLen[hg.chrNum(e.v2.chrom)]) - 1
-        d1list = [a for a in self.fetch(e.v1.chrom, v1min, v1max) if not a.is_unmapped]
-        d2list = [a for a in self.fetch(e.v2.chrom, v2min, v2max) if not a.is_unmapped]
+        d1list = [a for a in fetch(self.bamfile, e.v1.chrom, v1min, v1max, self.downsample) if not a.is_unmapped]
+        d2list = [a for a in fetch(self.bamfile, e.v2.chrom, v2min, v2max, self.downsample) if not a.is_unmapped]
         d1Set = set([(a.query_name, a.is_read1, a.is_reverse, (a.is_secondary or a.is_supplementary)) for a in d1list])
         if e.v1.strand == e.v2.strand:
             d2Set = set([(a.query_name, a.is_read1, not a.is_reverse, (not a.is_secondary and not a.is_supplementary)) for a in d2list])
@@ -1060,37 +1046,6 @@ class bam_to_breakpoint():
         logging.debug("#TIME " + '%.3f\t'%(time() - TSTART) + " edge_breakpoint_filter: " + str(e))
         return self.edge_has_high_mapq(read_list) and self.edge_has_high_entropy(read_list)
 
-    def sa_tag_overlaps_primary(self, a):
-        if not a.has_tag('SA'):
-            return False
-        t = a.get_tag('SA').split(',')
-        if t[0] != a.reference_name:
-            return False
-        if (t[2] == '+') != a.is_reverse:
-            return False
-        if min(abs(int(t[1]) - a.reference_start), abs(int(t[1]) - a.reference_end)) > self.read_length:
-            return False
-        return True
-
-    def sa_tag_mismatch_breakpoint(self, a, bp):
-        if not a.has_tag('SA'):
-            return False
-        t = a.get_tag('SA').split(',')
-        if t[0] != a.reference_name:
-            return True
-        if (t[2] == '+') != a.is_reverse:
-            return True
-        if bp.strand == -1 and (a.reference_start != bp.pos or int(t[1]) != bp.pos):
-            return True
-        if bp.strand == 1:
-            if abs(a.reference_end - bp.pos) > 10:
-                return True
-            cigar_counts = [int(i) for i in re.findall(r'\d+', t[3])]
-            cigar_op = [i for i in re.findall(r'\D', t[3])]
-            sa_ref_len = sum([i[0] for i in zip(cigar_counts, cigar_op) if i[1] in 'MDNX'])
-            if abs(int(t[1]) + sa_ref_len - bp.pos) > 10:
-                return True
-        return False
 
     def edge_touches_interval(self, e, ival):
         if e.v1.chrom == ival.chrom and ival.start <= e.v1.pos <= ival.end:
@@ -1109,35 +1064,44 @@ class bam_to_breakpoint():
             ilist = hg.interval_list([interval])
         else:
             ilist = interval
-        if (tuple([(i.chrom, i.start, i.end) for i in ilist]), filter_repeats, pair_support, not ms is None) in self.discordant_edge_calls:
-            return self.discordant_edge_calls[(tuple([(i.chrom, i.start, i.end) for i in ilist]), filter_repeats, pair_support, not ms is None)]
 
-        interval = ilist[0]
+        # Caching mechanism
+        cache_key = (
+            tuple([(i.chrom, i.start, i.end) for i in ilist]),
+            filter_repeats,
+            pair_support,
+            ms is not None
+        )
+
+        if cache_key in self.discordant_edge_calls:
+            return self.discordant_edge_calls[cache_key]
+
         dflist = []
         drlist = []
         for i in ilist:
-            dflist += [a for a in self.fetch(i.chrom, max(1, i.start), i.end)
-                       if not a.is_unmapped and not a.is_reverse and a.is_paired
-                       and not a.is_proper_pair
-                       and not a.mate_is_unmapped and not a.is_supplementary
-                       and not a.is_secondary and a.reference_end is not None
-                       and a.mapping_quality > self.mapping_quality_cutoff
-                       and not (a.reference_name == a.next_reference_name
-                                and a.mate_is_reverse
-                                and abs(a.reference_start - a.next_reference_start) < self.max_insert)] # this section catches everted sequencing artifacts
-            drlist += [a for a in self.fetch(i.chrom, max(1, i.start), i.end)
-                       if not a.is_unmapped and a.is_reverse and a.is_paired
-                       and not a.is_proper_pair
-                       and not a.mate_is_unmapped and not a.is_supplementary
-                       and not a.is_secondary and a.reference_end is not None
-                       and a.mapping_quality > self.mapping_quality_cutoff
-                       and not (a.reference_name == a.next_reference_name
-                                and not a.mate_is_reverse
-                                and abs(a.reference_start - a.next_reference_start) < self.max_insert)] # this section catches everted sequencing artifacts
+            for a in fetch(self.bamfile, i.chrom, max(1, i.start), i.end, self.downsample_ratio):
+                # Common conditions
+                if (
+                        not a.is_proper_pair and not a.is_supplementary and not a.is_secondary and a.mapping_quality > self.mapping_quality_cutoff
+                        and not a.is_unmapped and not a.mate_is_unmapped and a.is_paired and a.reference_end is not None
+                ):
+                    # Check for shared mate orientation conditions
+                    wide_proper_pair = (
+                            abs(a.reference_start - a.next_reference_start) < self.max_insert
+                            and a.reference_name == a.next_reference_name
+                            and a.is_reverse == a.mate_is_reverse
+                    )
 
-        logging.debug("#TIME " + '%.3f\t'%(time() - TSTART) + " discordant edges: discordant read pairs found: %s %s %s" % (str(interval), len(dflist), len(drlist)))
+                    # Determine dflist or drlist based on mate orientation and valid_mate
+                    if not wide_proper_pair:
+                        if not a.is_reverse:
+                            dflist.append(a)  # Forward read condition for `dflist`
+                        elif a.is_reverse:
+                            drlist.append(a)  # Reverse read condition for `drlist`
 
-
+            logging.debug(
+                "#TIME " + '%.3f\t' % (time() - TSTART) + " discordant edges: discordant read pairs found: %s %s %s" % (
+                    str(i), len(dflist), len(drlist)))
 
         # perform biclustering for readpairs using union-find algorithm to give sets of connected read-pairs clist
         vlist = []
@@ -1243,7 +1207,10 @@ class bam_to_breakpoint():
         clist.sort()
         ci = 0
         # The following section would benefit greatly from speedups
+        vertex_init_time = 0
+        vi_time = time()
         for c1 in mcdflist + mcdrlist:
+            cbe_time = time()
             ci += 1
             neighbor_hglist = hg.interval_list([])
             for a1 in c1[1]:
@@ -1258,8 +1225,8 @@ class bam_to_breakpoint():
                 vl1Set = set()
                 vl2Set = set()
                 for a1 in c1[1]:
+                    aq1 = hgddict[a1]
                     for a2 in c2[1]:
-                        aq1 = hgddict[a1]
                         aq2 = hgddict[a2]
                         if aq1.query_name == aq2.query_name and aq1.is_read1 != aq2.is_read1:
                             if aq1.reference_name == aq2.reference_name and abs(aq1.reference_start - aq2.reference_start) < self.read_length and abs(aq1.reference_end - aq2.reference_end) < self.read_length and aq1.is_reverse != aq2.is_reverse:
@@ -1274,7 +1241,9 @@ class bam_to_breakpoint():
                             vl1Set.add((aq1.reference_start, aq1.reference_end))
                             vl2Set.add((aq2.reference_start, aq2.reference_end))
 
-        # end code optimization section
+                vertex_init_time += (time() - cbe_time)
+
+            # end code optimization section
                 if len(vl) == 0 or len([v for v in vl if v[1].reference_start*v[0].reference_start > 0]) == 0:
                     continue
                 if not vl[0][0].is_reverse:
@@ -1452,10 +1421,15 @@ class bam_to_breakpoint():
                     elif brec.type() != 'concordant' and brec.v1.pos == brec.v2.pos:
                         logging.debug("Filtered special case v1.pos == v2.pos " + str(brec))
 
+        vi_total = time() - vi_time
+        logging.debug("#TIME " + '%.3f\t'%(time() - TSTART) + " discordant edges: mcdf, mcdr iterations complete")
+        logging.debug("Vi_total: %.3f, cbe_total: %.3f", vi_total, vertex_init_time)
+
+
         # remove local edges with no complementary edges and add warning if any found
         for bb1 in dnlist0:
+            bre1 = bb1[0]
             for bb2 in dnlist0:
-                bre1 = bb1[0]
                 bre2 = bb2[0]
                 if bre1 == bre2 and (bre1.v1.chrom, bre1.v1.pos, bre1.v1.strand) != (bre1.v2.chrom, bre1.v2.pos, bre1.v2.strand):
                     continue
@@ -1474,8 +1448,11 @@ class bam_to_breakpoint():
                     logging.debug('dnlist: ' + str(bb1[0]) + " " + str(bb1[1]))
 
         logging.debug("#TIME " + '%.3f\t'%(time() - TSTART) + " discordant edges: local edges done " + str(interval) + " " + str(len(mcdflist)) + " " + str(len(mcdrlist)) + " " + str(len(dnlist)))
+        # following section is extremely slow
         self.get_mates_time = 0
         self.get_mates_num_calls = 0
+        mcdx_querynames = set()
+        mcdx_querynames.update(hgddict[hga].query_name for c in mcdflist + mcdrlist for hga in c[1])
         for c in mcdflist + mcdrlist:
             nlist = []
             if filter_repeats:
@@ -1483,18 +1460,19 @@ class bam_to_breakpoint():
                     continue
             rep_content_time = 0
             intersection_time = 0
-            nr_calls = 0
             for hga in c[1]:
-                nmatelist = self.get_mates(hgddict[hga])
+                nmate = self.get_mates(hgddict[hga], mcdx_querynames)
                 if filter_repeats:
-                    rpc = time()
-                    nmatelist = [a for a in nmatelist if not hg.interval(a, bamfile=self.bamfile).filter_repeat() and a.mapping_quality > self.mapping_quality_cutoff]
-                    nr_calls += len(nmatelist)
-                    rep_content_time += time() - rpc
+                    #nmatelist = [a for a in nmatelist if not hg.interval(a, bamfile=self.bamfile).filter_repeat() and a.mapping_quality > self.mapping_quality_cutoff]
+                    if hg.interval(nmate, bamfile=self.bamfile).filter_repeat() or nmate.mapping_quality <= self.mapping_quality_cutoff:
+                        continue
+
                 ict = time()
-                nmatelist = [a for a in nmatelist if len(hg.interval_list([hg.interval(a, bamfile=self.bamfile)]).intersection(ilist)) == 0]
+                if len(hg.interval_list([hg.interval(nmate, bamfile=self.bamfile)]).intersection(ilist)) == 0:
+                    nlist.append(nmate)
+                #nmatelist = [a for a in nmatelist if len(hg.interval_list([hg.interval(a, bamfile=self.bamfile)]).intersection(ilist)) == 0]
                 intersection_time += time() - ict
-                nlist += nmatelist
+                # nlist += nmatelist
             nflist = [n for n in nlist if not n.is_reverse]
             nrlist = [n for n in nlist if n.is_reverse]
             hgndict = {hg.interval(a, bamfile=self.bamfile):a for a in nflist + nrlist}
@@ -1521,16 +1499,30 @@ class bam_to_breakpoint():
                     if filter_repeats:
                         if hgm.filter_repeat() or hgndict[hgm].mapping_quality <= self.mapping_quality_cutoff:
                             continue
-                    for a in self.get_mates(hgndict[hgm]):
-                        if filter_repeats:
-                            if hg.interval(a, bamfile=self.bamfile).filter_repeat() or a.mapping_quality <= self.mapping_quality_cutoff:
-                                continue
-                        if hg.interval(a, bamfile=self.bamfile).intersects(c[0]):
-                            vl.append((a, hgndict[hgm]))
-                            vlSet.add((a.reference_start, a.reference_end, hgndict[hgm].reference_start, hgndict[hgm].reference_end))
-                            vl1Set.add((a.reference_start, a.reference_end))
-                            vl2Set.add((hgndict[hgm].reference_start, hgndict[hgm].reference_end))
-                            break
+
+                    nmate = self.get_mates(hgndict[hgm], mcdx_querynames)
+                    if filter_repeats:
+                        # nmatelist = [a for a in nmatelist if not hg.interval(a, bamfile=self.bamfile).filter_repeat() and a.mapping_quality > self.mapping_quality_cutoff]
+                        if (hg.interval(nmate, bamfile=self.bamfile).filter_repeat() or
+                                nmate.mapping_quality <= self.mapping_quality_cutoff):
+                            continue
+
+                    if hg.interval(nmate, bamfile=self.bamfile).intersects(c[0]):
+                        vl.append((nmate, hgndict[hgm]))
+                        vlSet.add((nmate.reference_start, nmate.reference_end, hgndict[hgm].reference_start, hgndict[hgm].reference_end))
+                        vl1Set.add((nmate.reference_start, nmate.reference_end))
+                        vl2Set.add((hgndict[hgm].reference_start, hgndict[hgm].reference_end))
+
+                    # for a in self.get_mates(hgndict[hgm], mcdx_querynames):
+                    #     if filter_repeats:
+                    #         if hg.interval(a, bamfile=self.bamfile).filter_repeat() or a.mapping_quality <= self.mapping_quality_cutoff:
+                    #             continue
+                    #     if hg.interval(a, bamfile=self.bamfile).intersects(c[0]):
+                    #         vl.append((a, hgndict[hgm]))
+                    #         vlSet.add((a.reference_start, a.reference_end, hgndict[hgm].reference_start, hgndict[hgm].reference_end))
+                    #         vl1Set.add((a.reference_start, a.reference_end))
+                    #         vl2Set.add((hgndict[hgm].reference_start, hgndict[hgm].reference_end))
+                    #         break
                 if len(vl) == 0 or len([v for v in vl if v[1].reference_start*v[0].reference_start > 0]) == 0:
                     continue
                 if not vl[0][0].is_reverse:
@@ -1579,6 +1571,8 @@ class bam_to_breakpoint():
                 if bre.type() != 'concordant':
                     if self.edge_passes_filters(vl, bre):
                         dnlist.append((bre, len(vl)))
+
+        #### END SLOW SECTION
         logging.debug("#TIME " + '%.3f\t'%(time() - TSTART) + " discordant edges: external edges done " + str(interval) + " " + str(self.get_mates_time) + " " +  str(self.get_mates_num_calls))
 
         # This is the location where additional SVs could be injected.
@@ -1755,10 +1749,8 @@ class bam_to_breakpoint():
             cpos = cpos - v.strand * self.max_insert / 2
             drange = [cpos, cpos + v.strand * self.max_insert]
             drange.sort()
-            dlist = [a for a in self.fetch(v.chrom,
-                                                   drange[0], drange[1])]
-            if (len(dlist) * self.read_length <
-                self.min_coverage * self.max_insert):
+            dlen = sum(1 for _ in fetch(self.bamfile, v.chrom, drange[0], drange[1], self.downsample_ratio))
+            if (dlen * self.read_length < self.min_coverage * self.max_insert):
                 continue
             cflag = cprevious
             if abs(cprevious - v.pos) > self.max_insert:
@@ -2260,7 +2252,7 @@ class bam_to_breakpoint():
         #k = [len([a for a in self.fetch(e.v1.chrom, e.v1.pos, e.v2.pos)]) for e in seqlist]
         # kgcc = [self.interval_coverage(hg.interval(i.chrom, e.v1.pos, e.v2.pos), gcc=True) * (e.v2.pos - e.v1.pos) / self.read_length for e in seqlist]
         # adding mapq filter:
-        k = [len([a for a in self.fetch(e.v1.chrom, e.v1.pos, e.v2.pos)]) for e in seqlist]
+        k = [sum(1 for _ in fetch(self.bamfile, e.v1.chrom, e.v1.pos, e.v2.pos, self.downsample_ratio)) for e in seqlist]
         # if not a.is_unmapped and a.reference_end - 1 <= e2 and a.mapping_quality > self.mapping_quality_cutoff]
         # k = kgcc
         # kcc = [self.interval_coverage(hg.interval(e.v1.chrom, e.v1.pos, e.v2.pos)) * (e.v2.pos - e.v1.pos) for e in seqlist]

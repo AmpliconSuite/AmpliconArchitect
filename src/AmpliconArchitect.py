@@ -60,7 +60,7 @@ else:
 
 import global_names
 
-__version__ = "1.4.r2"
+__version__ = "1.5.r0"
 
 parser = argparse.\
 ArgumentParser(description="Reconstruct Amplicons connected to listed intervals.")
@@ -410,6 +410,9 @@ for ig in irdgroups:
         graph_logger.addHandler(graph_handler)
         cycle_logger.addHandler(cycle_handler)
         bamFileb2b.interval_filter_vertices(ilist, amplicon_name=amplicon_name, runmode=args.runmode)
+        logging.info("Total read mate cache attempts, hits, success rate: %d, %d, %.2f%%",
+                     bamFileb2b.mate_cache_tries, bamFileb2b.mate_cache_hits,
+                     (bamFileb2b.mate_cache_hits / bamFileb2b.mate_cache_tries * 100 if bamFileb2b.mate_cache_tries > 0 else 0.0))
         graph_logger.removeHandler(graph_handler)
         cycle_logger.removeHandler(cycle_handler)
 
