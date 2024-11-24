@@ -245,15 +245,29 @@ class interval(object):
     def size(self):
         return self.end - self.start + 1
 
+    # def __str__(self):
+    #     if len(str(self.info)) == 0:
+    #         return '\t'.join(map(str, [self.chrom, self.start, self.end]))
+    #     elif type(self.info) == list:
+    #         return '\t'.join(map(str, [self.chrom, self.start, self.end] + list(self.info)))
+    #     elif type(self.info) == dict:
+    #         return '\t'.join(map(str, [self.chrom, self.start, self.end] + [str(s) + '=' + str(self.info[s]) for s in self.info]))
+    #     else:
+    #         return '\t'.join(map(str, [self.chrom, self.start, self.end, self.info]))
+
     def __str__(self):
+        # Format genomic coordinates in standard format
+        coord = "{}:{}-{}".format(self.chrom, self.start, self.end)
+
+        # Handle different info types
         if len(str(self.info)) == 0:
-            return '\t'.join(map(str, [self.chrom, self.start, self.end]))
-        elif type(self.info) == list:
-            return '\t'.join(map(str, [self.chrom, self.start, self.end] + list(self.info)))
-        elif type(self.info) == dict:
-            return '\t'.join(map(str, [self.chrom, self.start, self.end] + [str(s) + '=' + str(self.info[s]) for s in self.info]))
+            return coord
+        elif isinstance(self.info, list):
+            return coord + '\t' + '\t'.join(map(str, self.info))
+        elif isinstance(self.info, dict):
+            return coord + '\t' + '\t'.join("{}={}".format(k, v) for k, v in self.info.items())
         else:
-            return '\t'.join(map(str, [self.chrom, self.start, self.end, self.info]))
+            return coord + '\t' + str(self.info)
 
     def gc_content(self):
         seq = fa_file.fetch(self.chrom, self.start, self.end)
