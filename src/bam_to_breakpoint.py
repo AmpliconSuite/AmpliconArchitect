@@ -1106,9 +1106,9 @@ class bam_to_breakpoint():
         # First pass: Check cache and collect missing keys
         for i in init_ilist:
             cache_key = (((i.chrom, i.start, i.end),), filter_repeats, pair_support, ms is not None)
-            logging.info("Discordant edge cache key: " + str(cache_key))
+            # logging.debug("Discordant edge cache key: " + str(cache_key))
             if cache_key in self.discordant_edge_calls:
-                logging.info("DE cache hit")
+                # logging.debug("DE cache hit")
                 final_dnlist.extend(self.discordant_edge_calls[cache_key])
             else:
                 unfound_cache_keys.add(cache_key)
