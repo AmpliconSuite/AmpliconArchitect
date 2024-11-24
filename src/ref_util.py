@@ -256,18 +256,16 @@ class interval(object):
     #         return '\t'.join(map(str, [self.chrom, self.start, self.end, self.info]))
 
     def __str__(self):
-        # Format genomic coordinates in standard format
-        coord = "{}:{}-{}".format(self.chrom, self.start, self.end)
-
         # Handle different info types
         if len(str(self.info)) == 0:
-            return coord
+            return '\t'.join(map(str, [self.chrom, self.start, self.end]))
         elif isinstance(self.info, list):
-            return coord + '\t' + '\t'.join(map(str, self.info))
+            return '\t'.join(map(str, [self.chrom, self.start, self.end] + self.info))
         elif isinstance(self.info, dict):
-            return coord + '\t' + '\t'.join("{}={}".format(k, v) for k, v in self.info.items())
+            return '\t'.join(
+                map(str, [self.chrom, self.start, self.end] + ["{}={}".format(k, v) for k, v in self.info.items()]))
         else:
-            return coord + '\t' + str(self.info)
+            return '\t'.join(map(str, [self.chrom, self.start, self.end, self.info]))
 
     def gc_content(self):
         seq = fa_file.fetch(self.chrom, self.start, self.end)
