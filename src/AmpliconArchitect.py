@@ -426,6 +426,7 @@ for ig in irdgroups:
     amplicon_id += 1
     continue
 
+logging.info("Time spent fetching mates:  %.3f s" % bamFileb2b.get_mates_time)
 logging.info("Read mate-cache attempts, hits, success rate: %d, %d, %.2f%%",
                 bamFileb2b.mate_cache_tries, bamFileb2b.mate_cache_hits,
                 (bamFileb2b.mate_cache_hits / bamFileb2b.mate_cache_tries * 100 if bamFileb2b.mate_cache_tries > 0 else 0.0))

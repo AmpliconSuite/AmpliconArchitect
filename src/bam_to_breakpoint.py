@@ -82,6 +82,7 @@ class bam_to_breakpoint():
         self.mate_cache = {}
         self.mate_cache_tries = 0
         self.mate_cache_hits = 0
+        self.get_mates_time = 0
         self.gc_scale = defaultdict(lambda: 1.0) #self.gc_scaling()
         self.gc_set = False
         self.ms_window_size = 10000
@@ -345,7 +346,7 @@ class bam_to_breakpoint():
                 iteri += 1
             wc_ws.sort()
             wc_ws_median = np.median(wc_ws)
-            wc_ws_filter = [c for c in wc_ws if c < 5 * wc_ws_median and c > 0]
+            wc_ws_filter = [c for c in wc_ws if 5 * wc_ws_median > c > 0]
             if len(wc_ws_filter) == 0:
                 # print(len(wc_ws_filter), len(wc_ws), len([c for c in wc_ws if c > 0]), wc_ws_median)
                 wc_median.append(0)
@@ -517,7 +518,9 @@ class bam_to_breakpoint():
 
         i2 = hg.interval(i.chrom, s2, e2)
         logging.debug("MS: " + str(i) + " startskip,endskip" + str((startskip,endskip)))
+        logging.debug("#TIME " + '%.3f\t' % (time() - TSTART) + "Fetching coverage for " + str(i2))
         cov = [c for c in self.window_coverage(i2, window_size, gcc, exact=False)]
+        logging.debug("#TIME " + '%.3f\t' % (time() - TSTART) + "Obtained coverage list for " + str(i2))
         cov = [(None, 0) for ni in range(startskip)] + cov + [(None, 0) for ni in range(endskip)]
         frozen = []
         def hr(c, wlen):
@@ -794,7 +797,7 @@ class bam_to_breakpoint():
         gmt = time()
         self.mate_cache_tries+=1
         if (a.query_name, not a.is_read1) not in self.mate_cache:
-            padding = 100000
+            padding = 10000
             for curr in self.fetch(a.next_reference_name, a.next_reference_start - padding, a.next_reference_start + padding):
                 if curr.query_name in relevant_read_names:
                     self.mate_cache[(curr.query_name, curr.is_read1)] = curr
@@ -1490,7 +1493,6 @@ class bam_to_breakpoint():
                     logging.debug('dnlist: ' + str(bb1[0]) + " " + str(bb1[1]))
 
         logging.debug("#TIME " + '%.3f\t'%(time() - TSTART) + " discordant edges: local edges done " + str(interval) + " " + str(len(mcdflist)) + " " + str(len(mcdrlist)) + " " + str(len(dnlist)))
-        self.get_mates_time = 0
         get_mates_num_calls = 0
         mcdx_querynames = set()
         mcdx_querynames.update(hgddict[hga].query_name for cc in mcdflist + mcdrlist for hga in cc[1])
@@ -1606,8 +1608,8 @@ class bam_to_breakpoint():
                     if self.edge_passes_filters(vl, bre):
                         dnlist.append((bre, len(vl)))
 
-        logging.debug("#TIME %.3f\tdiscordant edges: external edges done %s %.3f %d",
-                      time() - TSTART, str(interval), self.get_mates_time, get_mates_num_calls)
+        logging.debug("#TIME %.3f\tdiscordant edges: external edges done %s %d",
+                      time() - TSTART, str(interval), get_mates_num_calls)
 
         # This is the location where additional SVs could be injected.
         # 1. Collect SVs from external callset overlapping the interval (at least one end)
