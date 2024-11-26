@@ -110,19 +110,29 @@ def read_vcf(vcf_file, filter_by_pass=True):
     field_warn = False
     with opener(vcf_file, 'rt') as infile:
         header_fields = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
+        has_tumor_and_normal = False
         for line in infile:
             if line.startswith("#CHROM"):
                 header_fields = line[1:].rstrip().rsplit()
+                # handle gridss tumor/normal mode output
+                if header_fields[-2] == "Normal_sample" and header_fields[-1] == "Tumor_sample":
+                    has_tumor_and_normal = True
 
             elif not line.startswith("#"):
                 fields = line.rstrip().rsplit()
                 fd = dict(zip(header_fields, fields))
                 # check that it's a single-sample VCF which should have 9 header field names and 1 sample name
                 # in the header.
-                if "FORMAT" in fd and len(header_fields) > 10:
-                    logging.error("VCF appears to contain multiple samples or non-standard fields. Please provide a"
-                                  " single-sample VCF with appropriate formatting\n")
-                    sys.exit(1)
+                if "FORMAT" in fd:
+                    if has_tumor_and_normal and len(header_fields) > 11:
+                        logging.error("VCF appears to contain multiple samples or non-standard fields. Please provide a"
+                                      " single-sample VCF with appropriate formatting\n")
+                        sys.exit(1)
+
+                    elif not has_tumor_and_normal and len(header_fields) > 10:
+                        logging.error("VCF appears to contain multiple samples or non-standard fields. Please provide a"
+                                      " single-sample VCF with appropriate formatting\n")
+                        sys.exit(1)
 
                 # this is because SVABA does not obey VCF4.2 format :(
                 if len(fields) > len(header_fields):
@@ -161,5 +171,5 @@ def sv_vcf_to_bplist(vcf_file, filter_by_pass=True):
                 vcf_dnlist.append((bref_rev, support))
 
 
-    logging.info("Read " + str(len(vcf_dnlist)) + " SV calls from " + vcf_file)
+    logging.info("Read " + str(len(vcf_dnlist) // 2) + " SV calls from " + vcf_file)
     return vcf_dnlist

@@ -25,11 +25,12 @@ import sys
 from bisect import bisect_left
 from collections import defaultdict
 from time import time
-import pysam
 import heapq
 import copy
 import os
 import logging
+
+import pysam
 
 import global_names
 
@@ -276,26 +277,26 @@ class interval(object):
 
     def intersects(self, n, extend=0, margin=0.0):
         if margin > 0.0:
-            if self.intersects(interval(n.chrom, n.start, n.end - (1 - margin) * (n.end - n.start))) and self.intersects(interval(n.chrom, n.start + (1 - margin) * (n.end - n.start)), n.end):
-                return True
-            else:
-                s = self
-                if n.intersects(interval(s.chrom, s.start, s.end - (1 - margin) * (s.end - s.start))) and n.intersects(interval(s.chrom, s.start + (1 - margin) * (s.end - s.start)), s.end):
+            margin_offset = (1 - margin) * (n.end - n.start)
+            margin_interval = (
+                (n.start + margin_offset, n.end - margin_offset),
+                (self.start + margin_offset, self.end - margin_offset)
+            )
+
+            for start, end in margin_interval:
+                if self.chrom == n.chrom and self.start <= end and self.end >= start:
                     return True
             return False
-        a = [self.chrom, max(0, self.start - extend), self.end + extend]
-        b = [n.chrom, n.start, n.end]
-        if (a[0] != b[0]):
+
+        # Adjust the intervals with the extension
+        self_start, self_end = max(0, self.start - extend), self.end + extend
+        n_start, n_end = n.start, n.end
+
+        # Check for chromosome match and interval overlap
+        if self.chrom != n.chrom:
             return False
-        if (int(a[1])-int(b[1]))*(int(a[2])-int(b[1])) <= 0:
-            return True
-        if (int(a[1])-int(b[2]))*(int(a[2])-int(b[2])) <= 0:
-            return True
-        if (int(a[1])-int(b[1]))*(int(a[1])-int(b[2])) <= 0:
-            return True
-        if (int(a[2])-int(b[1]))*(int(a[2])-int(b[2])) <= 0:
-            return True
-        return False
+
+        return self_start <= n_end and self_end >= n_start
 
     def intersection(self, y):
         if not self.intersects(y):
@@ -374,15 +375,12 @@ class interval(object):
         while hi - lo > 1:
             numiter += 1
             p = (hi + lo) // 2
-            ctime = time()
             m = interval(duke35[p])
-            ictime += time() - ctime
-            ctime = time()
             if s34.intersects(m) or m > s34:
                 hi = p
             else:
                 lo = p
-            itime += time() - ctime
+
         p = lo
         m = interval(duke35[p])
         sum_duke = 0
