@@ -83,6 +83,8 @@ class bam_to_breakpoint():
         self.mate_cache_tries = 0
         self.mate_cache_hits = 0
         self.get_mates_time = 0
+        self.cc_slow_time = 0
+        self.cc_fast_time = 0
         self.gc_scale = defaultdict(lambda: 1.0) #self.gc_scaling()
         self.gc_set = False
         self.ms_window_size = 10000
@@ -185,12 +187,16 @@ class bam_to_breakpoint():
         # if clip == True or (clip == False and i.size() >= 100 * self.read_length):
         #     return len(alist) * self.read_length / float(i.size())
         if clip == True or (clip is None and e2-s2 <= 1000):
+            init_time = time()
             icc = sum([sum(a) for a in self.bamfile.count_coverage(i.chrom, s2, e2, quality_threshold=self.mapping_quality_cutoff)]) * self.downsample_ratio / max(1.0, float(e2-s2 + 1))
+            self.cc_slow_time += time() - init_time
             self.interval_coverage_calls[call_args] = icc
             return self.interval_coverage_calls[call_args]
         else:
+            init_time = time()
             alist_len = sum(1 for a in self.fetch(i.chrom, s2, e2)
                 if not a.is_unmapped and a.reference_end - 1 <= e2 and a.mapping_quality > self.mapping_quality_cutoff)
+            self.cc_slow_time += time() - init_time
             self.interval_coverage_calls[call_args] = alist_len * self.read_length / max(1.0, float(e2 - s2 + 1))
             return self.interval_coverage_calls[call_args]
 
@@ -760,8 +766,8 @@ class bam_to_breakpoint():
 
     def get_meanshift(self, i, window_size0=10000, window_size1=300, gcc=False):
         logging.debug("get_meanshift on " + str(i))
-        file_name = "%s_%s_%s_%s_ws%s_cnseg.txt" % (self.sample_name, i.chrom, i.start, i.end, window_size0)
-        if os.path.exists(file_name) and i.end - i.start > 50000 and window_size0 == 10000:
+        file_name = "%s_%s_%s_%s_ws_%s_%s_gcc_%s_cnseg.txt" % (self.sample_name, i.chrom, i.start, i.end, window_size0, window_size1, gcc)
+        if os.path.exists(file_name):  # and i.end - i.start > 50000 and window_size0 == 10000:
             logging.debug("Re-using cn-seg info in " + file_name)
             msfile = open(file_name)
             msr = []
@@ -864,6 +870,7 @@ class bam_to_breakpoint():
                                          min(v.pos - 1, max([a.reference_end - 1 for a in dlist])), 1)
                 logging.debug("#TIME " + '%.3f\t'%(time() - TSTART) + " concordant edges " + str(v) + " " + str(len(dlist)))
                 return (breakpoint_edge(v, v2), dlist)
+
         logging.debug("#TIME " + '%.3f\t'%(time() - TSTART) + " concordant edges " + str(v) + " not found")
         return (None, dlist)
             
@@ -1118,7 +1125,7 @@ class bam_to_breakpoint():
 
         # First pass: Check cache and collect missing keys
         for i in init_ilist:
-            cache_key = (((i.chrom, i.start, i.end),), filter_repeats, pair_support, ms is not None)
+            cache_key = (((i.chrom, i.start, i.end),), filter_repeats, pair_support, str(ms))
             # logging.debug("Discordant edge cache key: " + str(cache_key))
             if cache_key in self.discordant_edge_calls:
                 # logging.debug("DE cache hit")
@@ -1154,7 +1161,7 @@ class bam_to_breakpoint():
                                 and not a.mate_is_reverse
                                 and abs(a.reference_start - a.next_reference_start) < self.max_insert)] # this section catches everted sequencing artifacts
 
-            logging.debug("#TIME " + '%.3f\t'%(time() - TSTART) + " discordant edges: discordant read pairs found: %s %s %s" % (str(), len(dflist), len(drlist)))
+            logging.debug("#TIME " + '%.3f\t'%(time() - TSTART) + " discordant edges: discordant read pairs found: %s %s %s" % (str(i), len(dflist), len(drlist)))
 
 
 
@@ -1660,11 +1667,11 @@ class bam_to_breakpoint():
 
         final_dnlist.sort(key=lambda x: hg.absPos(x[0].v1.chrom, x[0].v1.pos) + 0.5 * x[0].v1.strand)
         for e in final_dnlist:
-            logging.debug("#TIME %.3f\tdiscordant edges %s %s %s %s %d %f %s" % (time() - TSTART, e[0], e[1], e[0].type(),
-            self.concordant_edge(e[0].v1)[0], len(self.concordant_edge(e[0].v1)[1]), hg.interval(e[0].v1.chrom, e[0].v1.pos,
+            logging.debug("#TIME %.3f\tdiscordant edges %s %s %s %s %f %s" % (time() - TSTART, e[0], e[1], e[0].type(),
+            self.concordant_edge(e[0].v1)[0], hg.interval(e[0].v1.chrom, e[0].v1.pos,
             e[0].v1.pos - e[0].v1.strand * self.max_insert).rep_content(), e[0].externally_called))
         self.discordant_edge_calls[(tuple([(i.chrom, i.start, i.end) for i in init_ilist]),
-                                    filter_repeats, pair_support, not ms is None)] = final_dnlist
+                                    filter_repeats, pair_support, str(ms))] = final_dnlist
 
         return final_dnlist
 
@@ -2062,6 +2069,7 @@ class bam_to_breakpoint():
             ngvlist = []
             elist = []
             for e in eilist:
+                # logging.debug("Added to initial elist: " + str(e))
                 if hg.interval(e[0].v1.chrom, e[0].v1.pos, e[0].v1.pos).intersects(i):
                     elist.append(e)
 
@@ -2257,6 +2265,11 @@ class bam_to_breakpoint():
         logging.debug("C (haploid coverage) = " +  str(C))
 
         seqlist = [e for e in new_graph.es.values() if e.edge_type == 'sequence']
+        # logging.info("Seqlist:")
+        # for e in new_graph.es.values():
+        #     logging.info(str(e) + " " + e.edge_type)
+        #
+        # logging.info("")
         n = len(seqlist)
         l = [abs(e.v2.pos - e.v1.pos)+1 for e in seqlist]
         # original
