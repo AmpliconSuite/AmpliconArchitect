@@ -7,6 +7,15 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
 
 ### Recent updates:
 
+### December 2024 update
+- `1.5.r0` adds the following features:
+  - Caching of discordant read pairs during SV identification to reduce lookups on bam file. This gives a speedup of about 2x on average, but likely better returns on samples with incredibly large numbers of SVs.
+  - Optimizations to fetching of downsampled reads (alters results slightly as randomness of downsampled reads is updated)
+  - Optimization to intersection detection implemented in AA. Results in a small speedup.
+  - Add support for parsing of SV VCF generated in GRIDSS having extra column for normal.
+  - Logging improvements
+  - Typo fixes (PR by cmdcolin) 
+
 ### June 2024 update
 - `1.4.r2` provides better handling of convergence failures during Mosek optimization and improves logging.
 
@@ -20,17 +29,7 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
 
 
 ### February 2024 update
-- `1.3.r8` adds breakpoint microhomology detection from alignments marked as supplementary (not just secondary). Also improves granularity of sashimi plot visualizations of CN segments. 
-
-### December 2023 update
-- `1.3.r7` refines the CN segmentation shown in the visualizations to prevent mismatches between displayed CN and coverage. Also allows SV VCF to use "." in the FILTER field instead of only "PASS". MOSEK convergence criteria relaxed slightly to prevent rare termination issues. 
-
-### July 2023 update
-- `1.3.r6` adds multiple new features:
-  - `--sv_vcf` argument which allows users to augment AA's SV detection with their own SV calls provided in a VCF format.
-  - Automated protection against improperly-formatted inputs
-  - Reduces bugs created when AA is rerun into the same directory with existing files having the same sample name but different input files.
-  - Bugfix for edge case where AA does not properly expand a newly discovered interval if a discovered SV lands exactly on the endpoint of the explored interval. 
+- `1.3.r8` adds breakpoint microhomology detection from alignments marked as supplementary (not just secondary). Also improves granularity of sashimi plot visualizations of CN segments.
 
 **[Older update descriptions are available here.](https://docs.google.com/document/d/1jqnCs46hrpYGBGrZQFop31ezskyludxNJEQdZONwFdc/edit?usp=sharing)**
 
