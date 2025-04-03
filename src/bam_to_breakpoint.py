@@ -85,6 +85,7 @@ class bam_to_breakpoint():
         self.get_mates_time = 0
         self.cc_slow_time = 0
         self.cc_fast_time = 0
+        self.decomp_time = 0
         self.gc_scale = defaultdict(lambda: 1.0) #self.gc_scaling()
         self.gc_set = False
         self.ms_window_size = 10000
@@ -348,7 +349,7 @@ class bam_to_breakpoint():
                 (c,p) = hg.chrPos(newpos)
                 if c not in self.bamfile.references or p < ws or hg.chrLen[hg.chrNum(c)] < p + ws or len(hg.interval_list([hg.interval(c, p, p+ws)]).intersection(hg.conserved_regions, extend=ws)) > 0 or len(hg.interval_list([hg.interval(c, p, p+ws)]).intersection(hg.centromere_list, extend=ws)) > 0:
                     continue
-                wc_ws.append(self.interval_coverage(hg.interval(c,p, p+ws), gcc=gcc))
+                wc_ws.append(self.interval_coverage(hg.interval(c, p, p+ws), gcc=gcc))
                 iteri += 1
             wc_ws.sort()
             wc_ws_median = np.median(wc_ws)
@@ -723,7 +724,8 @@ class bam_to_breakpoint():
 
         shift1_intervals = hg.interval_list(hg.interval(msi.chrom, msi.end, msi.end) for msi in shifts0[:-1])
         shift1_intervals = [msi[0] for msi in shift1_intervals.merge_clusters(extend=3 * window_size0)]
-        shifts1 = reduce(lambda x,y: x+y, [self.meanshift_segmentation(hg.interval(i.chrom, s.start - 3 * window_size0, s.start + 3 * window_size0), window_size1, gcc, pvalue=0.05) for s in shift1_intervals], [])
+        shifts1 = reduce(lambda x,y: x+y, [self.meanshift_segmentation(hg.interval(i.chrom, max(0, s.start - 3 * window_size0),
+                            s.start + 3 * window_size0), window_size1, gcc, pvalue=0.05) for s in shift1_intervals], [])
 
         matched_shifts = []
         prev_end = None
@@ -1744,7 +1746,8 @@ class bam_to_breakpoint():
                     msve = [e for e in elist if e[0].v1.strand * (msr[msi].info['cn'] - msr[msi + 1].info['cn']) > 0 and abs(e[0].v1.pos - msr[msi].end) < self.max_insert + ms_window_size1]
                     if len(msve) == 0:
                         # print("finesearch discordant edges", i.chrom, str(msr[msi]), str(msr[msi + 1]))
-                        efine = self.interval_discordant_edges(hg.interval(i.chrom, msv.pos - ms_window_size0-self.max_insert, msv.pos + ms_window_size1+self.max_insert), pair_support=2)
+                        efine = self.interval_discordant_edges(hg.interval(i.chrom, max(0, msv.pos - ms_window_size0-self.max_insert),
+                                                                           msv.pos + ms_window_size1+self.max_insert), pair_support=2)
                         if len([e for e in efine if e[0].v1.strand * (msr[msi].info['cn'] - msr[msi + 1].info['cn']) > 0]) > 0:
                             if len([(e[1], e[0]) for e in efine if e[0].v1.strand * (msr[msi].info['cn'] - msr[msi + 1].info['cn']) > 0 and abs(e[0].v1.pos - msv.pos) < ms_window_size1]) > 0:
                                 ebest = max([(e[1], e[0]) for e in efine if e[0].v1.strand * (
@@ -2410,8 +2413,11 @@ class bam_to_breakpoint():
             cycle_logger.info("Interval\t" + '\t'.join([str(interval_index), i.chrom, str(i.start), str(i.end)]))
             interval_index += 1
 
-        logging.info("#TIME " + '%.3f\t'%(time() - self.tstart) + " Decomposing cycles")
+        logging.info("#TIME " + '%.3f\t'%(time() - self.tstart) + " Decomposing cycles...")
+        init_time = time()
         new_graph.cycle_decomposition(wehc, s)
+        self.decomp_time += time() - init_time
+        logging.info("#TIME " + '%.3f\t'%(time() - self.tstart) + " Completed decomposition")
 
 
     # Plot coverage, meanshift copy count estimates and discordant edges in interval
@@ -2708,8 +2714,13 @@ class bam_to_breakpoint():
         fig.subplots_adjust(hspace=0)
         try:
             fig.savefig(amplicon_name + '.png', dpi=dpi)
+        except np.linalg.linalg.LinAlgError:
+            logging.error("Numpy LinAlgError when forming amplicon plot! Cannot save " + amplicon_name + " png image\n")
+
+        try:
             fig.savefig(amplicon_name + '.pdf', dpi=dpi)
         except np.linalg.linalg.LinAlgError:
-            logging.error("Numpy LinAlgError when forming amplicon plot! Cannot save " + amplicon_name + " image\n")
+            logging.error("Numpy LinAlgError when forming amplicon plot! Cannot save " + amplicon_name + " pdf image\n")
+
 
         plt.close()

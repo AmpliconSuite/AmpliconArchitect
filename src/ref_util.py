@@ -138,7 +138,6 @@ def reverse_complement(seq):
     return ''.join([complementary_nucleotide[a] for a in seq][::-1])
 
 
-
 class interval(object):
     def __init__(self, line, start=-1, end=-1, strand=1,
         file_format='', bamfile=None, info='', exclude_info_string=False):
@@ -158,19 +157,35 @@ class interval(object):
     def load_line(self, line, file_format, exclude_info_string=False):
         if file_format == '':
             if len(line.strip().split()) == 1:
-                self.chrom = line.split(':')[0]
-                self.start = int(line.split(':')[1].split('-')[0])
-                if '-' not in line:
-                    self.end = int(line.split(':')[1].split('-')[0])
+                if ":" not in line:
+                    fields = line.strip().split('-')
+                    if len(fields) < 2:
+                        raise (Exception("Invalid interval format: " + str(line)))
+
+                    self.chrom = fields[0], self.start = int(fields[1])
+                    if len(fields) > 2:
+                        self.end = int(fields[2])
+                    else:
+                        self.end = int(fields[1])
+
                 else:
-                    self.end = int(line.split(':')[1].split('-')[1])
+                    self.chrom = line.split(':')[0]
+                    self.start = int(line.split(':')[1].split('-')[0])
+                    if '-' not in line:
+                        self.end = int(line.split(':')[1].split('-')[0])
+                    else:
+                        self.end = int(line.split(':')[1].split('-')[1])
+
                 if self.start < self.end:
                     self.strand = 1
                 else:
                     self.strand = -1
+
                 return
+
             else:
-                 file_format = 'bed'
+                file_format = 'bed'
+
         if file_format=='gff':
             ll = line.strip().split()
             self.chrom = ll[0]
@@ -207,7 +222,7 @@ class interval(object):
             if not exclude_info_string:
                 self.info = ll[3:]
         else:
-            raise(Exception("Invalid interval format" + str(line)))
+            raise(Exception("Invalid interval format: " + str(line)))
 
     def load_pos(self, chrom, start, end, strand):
         self.chrom = chrom 

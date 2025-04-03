@@ -60,7 +60,7 @@ else:
 
 import global_names
 
-__version__ = "1.5.r0"
+__version__ = "1.5.r1"
 
 parser = argparse.\
 ArgumentParser(description="Reconstruct Amplicons connected to listed intervals.")
@@ -431,6 +431,8 @@ logging.info("Time spent fetching mates:  %.3f s" % bamFileb2b.get_mates_time)
 logging.info("Read mate-cache attempts, hits, success rate: %d, %d, %.2f%%",
                 bamFileb2b.mate_cache_tries, bamFileb2b.mate_cache_hits,
                 (bamFileb2b.mate_cache_hits / bamFileb2b.mate_cache_tries * 100 if bamFileb2b.mate_cache_tries > 0 else 0.0))
+
+logging.info("Time spent decomposing cycles: %.3f s" % bamFileb2b.decomp_time)
 
 if (args.extendmode in ['VIRAL', 'VIRAL_CLUSTERED']) and (args.runmode in ['FULL', 'SVVIEW', 'VIRALVIEW']):
     amplicon_id = 1

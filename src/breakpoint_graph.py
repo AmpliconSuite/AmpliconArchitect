@@ -160,8 +160,13 @@ class breakpoint_edge(abstract_edge):
         """Number of shared k-mers within "span" distance on either side of vertex positions"""
         seq1 = ''.join([a.capitalize() for a in hg.interval(self.v1.chrom, max(1,self.v1.pos - span), min(self.v1.pos + span, hg.chrLen[hg.chrNum(self.v1.chrom)]), self.v1.strand).sequence()])
         seq2 = ''.join([a.capitalize() for a in hg.interval(self.v2.chrom, max(1,self.v2.pos - span), min(self.v2.pos + span, hg.chrLen[hg.chrNum(self.v2.chrom)]), -1 * self.v2.strand).sequence()])
-        kset1 = set([seq1[i:i+10] for i in range(len(seq1) - k + 1)])
-        kset2 = set([seq2[i:i+10] for i in range(len(seq2) - k + 1)])
+        n1 = len(seq1) - k + 1
+        n2 = len(seq2) - k + 1
+        if n1 <= 0 or n2 <= 0:
+            return 0
+
+        kset1 = {seq1[i:i + k] for i in range(n1)}
+        kset2 = {seq2[i:i + k] for i in range(n2)}
         return len(kset1.intersection(kset2))
 
     def type(self, min_insert=0, max_insert=500):
@@ -230,10 +235,8 @@ class breakpoint_graph(abstract_graph):
 
     def has_vertex(self, chrom, pos, strand):
         vtemp = breakpoint_vertex(chrom, pos, strand)
-        if vtemp.__hash__() in self.vhash:
-            return self.vhash[vtemp.__hash__()]
-        else:
-            return None
+        vhash_key = vtemp.__hash__()
+        return self.vhash.get(vhash_key)
 
     def new_vertex(self, chrom, pos, strand):
         """Create, add and return new breakpoint_vertex if similar vertex not already present"""
@@ -446,7 +449,7 @@ class breakpoint_graph(abstract_graph):
             #     print v2, tc
             return tc, hdict[hce[1].v1][0]
 
-        total_amplicon_content = sum([(e.v2.pos - e.v1.pos) * w[e] for e in w if e.edge_type == 'sequence'])
+        total_amplicon_content = sum((e.v2.pos - e.v1.pos) * w[e] for e in w if e.edge_type == 'sequence')
         amplicon_content_covered = 0
         w2 = w.copy()
         cycle_number = 1
@@ -591,7 +594,7 @@ class breakpoint_graph(abstract_graph):
                 cycle_edge_list.append((v0,v0c))
             if amplicon_content_covered <= 0.9 * total_amplicon_content or (tcw > 0.2 * cycle_list[0][1]):
                 cycle_list.append([cycle_number, tcw, tc, cycle_edge_list])
-                acc = tcw * sum([abs(e[1].pos - e[0].pos) for e in cycle_edge_list if -1 not in [e[0].pos, e[1].pos]])
+                acc = tcw * sum(abs(e[1].pos - e[0].pos) for e in cycle_edge_list if -1 not in [e[0].pos, e[1].pos])
                 amplicon_content_covered += acc
             cycle_number += 1    
             # print tcw, tc
