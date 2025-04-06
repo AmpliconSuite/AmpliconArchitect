@@ -129,7 +129,7 @@ class bam_to_breakpoint():
                 rr = self.downsample_ratio
                 rsq = math.sqrt(rr)
                 r = [i[0] * i[1] for i in zip([rr, rr, rsq, rr, rr, rsq, 1, 1, 1, 1, 1, 1, 1], r)]
-                r[11] = max(int(round((r[4] / 10.0) * ((r[7] - r[6]) / 2.0 / r[6])*r[12])), self.pair_support_min)
+                r[11] = max(int(round((r[4] / 10.0) * ((r[7] - r[6]) / 2.0 / r[6])*(1.0/r[12]))), self.pair_support_min)
                 self.pair_support = r[11]
                 self.downsample_stats = r
             else:
@@ -380,7 +380,7 @@ class bam_to_breakpoint():
         (wc_300_median, wc_300_avg, wc_300_std) = (wc_median[1], wc_avg[1], wc_std[1])
         bamfile_pathname = str(self.bamfile.filename.decode())
         bamfile_filesize = os.path.getsize(bamfile_pathname)
-        self.pair_support = max(int(round((wc_300_avg / 10.0) * ((self.insert_size - self.read_length) / 2.0 / self.read_length)*self.percent_proper)), 2)
+        self.pair_support = max(int(round((wc_300_avg / 10.0) * ((self.insert_size - self.read_length) / 2.0 / self.read_length)*(1/self.percent_proper))), 2)
         rstats = (wc_10000_median, wc_10000_avg, wc_10000_std, wc_300_median, wc_300_avg, wc_300_std, self.read_length,
                   self.insert_size, self.insert_std, self.min_insert, self.max_insert, self.pair_support,
                   self.percent_proper, self.num_sdevs, bamfile_filesize)
@@ -405,7 +405,8 @@ class bam_to_breakpoint():
             rr = self.downsample_ratio
             rsq = math.sqrt(rr)         
             r = [i[0] * i[1] for i in zip([rr, rr, rsq, rr, rr, rsq, 1, 1, 1, 1, 1, 1, 1, 1, 1], r)]
-            r[11] = max(int(round((r[4] / 10.0) * ((r[7] - r[6]) / 2.0 / r[6])*r[12])), self.pair_support_min)
+            # max(int(wc_300_avg / 10.0 ) * ((insert_size - read_length) / 2.0 / read_length) * percent_proper
+            r[11] = max(int(round((r[4] / 10.0) * ((r[7] - r[6]) / 2.0 / r[6])*(1.0/r[12]))), self.pair_support_min)
             self.pair_support = r[11]
             self.downsample_stats = r
 
