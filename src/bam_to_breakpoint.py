@@ -96,7 +96,10 @@ class bam_to_breakpoint():
         self.mapping_quality_cutoff = 5
         self.breakpoint_mapping_quality_cutoff = 20
         self.breakpoint_entropy_cutoff = 0.75
-        self.pair_support_min=pair_support_min
+        if not pair_support_min is None:
+            self.pair_support_min = pair_support_min
+        else:
+            self.pair_support_min = 2
         hg.update_chrLen([(c['SN'], c['LN']) for c in self.bamfile.header['SQ']])
         self.discordant_edge_calls = {}
         self.interval_coverage_calls = {}
@@ -136,7 +139,6 @@ class bam_to_breakpoint():
         self.coverage_logs = {}
 
         if pair_support != -1 and pair_support is not None:
-            logging.info("Min pair support supplied by user.")
             self.pair_support = pair_support
 
         if foldback_pair_support_min is not None:
@@ -378,7 +380,7 @@ class bam_to_breakpoint():
         (wc_300_median, wc_300_avg, wc_300_std) = (wc_median[1], wc_avg[1], wc_std[1])
         bamfile_pathname = str(self.bamfile.filename.decode())
         bamfile_filesize = os.path.getsize(bamfile_pathname)
-        self.pair_support = max(int(round((wc_300_avg / 10.0) * ((self.insert_size - self.read_length) / 2.0 / self.read_length)*self.percent_proper)), self.pair_support_min)
+        self.pair_support = max(int(round((wc_300_avg / 10.0) * ((self.insert_size - self.read_length) / 2.0 / self.read_length)*self.percent_proper)), 2)
         rstats = (wc_10000_median, wc_10000_avg, wc_10000_std, wc_300_median, wc_300_avg, wc_300_std, self.read_length,
                   self.insert_size, self.insert_std, self.min_insert, self.max_insert, self.pair_support,
                   self.percent_proper, self.num_sdevs, bamfile_filesize)
