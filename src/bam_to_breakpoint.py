@@ -102,7 +102,6 @@ class bam_to_breakpoint():
         self.interval_coverage_calls = {}
         self.tstart = tstart if tstart != 0 else TSTART
         self.ext_dnlist = ext_dnlist if ext_dnlist else []
-        self.foldback_pair_support_min = foldback_pair_support_min
         if coverage_stats is None:
             self.basic_stats_set = False
             self.median_coverage(window_list=coverage_windows)
@@ -136,8 +135,15 @@ class bam_to_breakpoint():
 
         self.coverage_logs = {}
 
-        if pair_support != -1:
+        if pair_support != -1 and pair_support is not None:
+            logging.info("Min pair support supplied by user.")
             self.pair_support = pair_support
+
+        if foldback_pair_support_min is not None:
+            logging.info("Min foldback pair support supplied by user.")
+            self.foldback_pair_support_min = foldback_pair_support_min
+        else:
+            self.foldback_pair_support_min = self.pair_support
 
     # Methods to find coverage and other statistics of bam file
     def fetch(self, c, s, e):
