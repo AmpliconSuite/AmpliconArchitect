@@ -126,7 +126,7 @@ parser.add_argument('--insert_sdevs', dest='insert_sdevs',
                     action='store', type=float, default=3)
 parser.add_argument('--pair_support_min', dest='pair_support_min',
                     help="Number of read pairs for minimum breakpoint support (default 2 but typically becomes higher due"
-                    " to coverage-scaled cutoffs)", metavar='INT', action='store', type=int)
+                    " to coverage-scaled cutoffs)", metavar='INT', action='store', type=int, default=2)
 parser.add_argument('--foldback_pair_support_min', help="Number of read pairs for minimum foldback SV support "
                     "(default 2 but typically becomes higher due to coverage-scaled cutoffs). Used value will be the maximum"
                     " of pair_support and this argument. Raising to 3 will help dramatically in heavily artifacted samples.",
