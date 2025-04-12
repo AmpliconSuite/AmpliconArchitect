@@ -270,7 +270,7 @@ if os.path.exists(os.path.join(hg.DATA_REPO, "coverage.stats")) and not args.no_
         if ll[0] == os.path.abspath(bamfile_pathname):
             bamfile_filesize = os.path.getsize(bamfile_pathname)
             cstats = tuple(map(float, ll[1:]))
-            if len(cstats) < 15 or int(round(cstats[11])) < args.pair_support_min:
+            if len(cstats) < 15 or int(round(cstats[11])) != args.pair_support_min:
                 cstats = None
             elif cstats[13] != args.insert_sdevs or bamfile_filesize != int(cstats[14]) or any(np.isnan(cstats)):
                 cstats = None
@@ -302,7 +302,7 @@ bamFileb2b = b2b.bam_to_breakpoint(bamFile, sample_name=outName, num_sdevs=args.
                                    coverage_stats=cstats, coverage_windows=coverage_windows, downsample=args.downsample,
                                    sensitivems=(args.sensitivems == 'True'), span_coverage=(args.cbam is None), tstart=TSTART,
                                    ext_dnlist=ext_dnlist, foldback_pair_support_min=args.foldback_pair_support_min)
-logging.info("#TIME " + '%.3f\t'%(time() - TSTART) + "Pair support requirement: " + str(bamFileb2b.pair_support))
+logging.info("Pair support requirement: " + str(bamFileb2b.pair_support))
 segments = []
 
 if args.extendmode == 'VIRAL':

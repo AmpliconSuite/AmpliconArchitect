@@ -108,6 +108,7 @@ class bam_to_breakpoint():
         if coverage_stats is None:
             self.basic_stats_set = False
             self.median_coverage(window_list=coverage_windows)
+            logging.debug("Coverage stats given to b2b was None")
         else:
             (wc_10000_median, wc_10000_avg, wc_10000_std, wc_300_median, wc_300_avg, wc_300_std, self.read_length,
              self.insert_size, self.insert_std, self.min_insert, self.max_insert, self.pair_support,
@@ -131,18 +132,21 @@ class bam_to_breakpoint():
                 r = [i[0] * i[1] for i in zip([rr, rr, rsq, rr, rr, rsq, 1, 1, 1, 1, 1, 1, 1], r)]
                 r[11] = max(int(round((r[4] / 10.0) * ((r[7] - r[6]) / 2.0 / r[6])*(1.0/r[12]))), self.pair_support_min)
                 self.pair_support = r[11]
+                logging.debug("pair support (ds ratio != 1): " + str(self.pair_support))
                 self.downsample_stats = r
             else:
                 self.downsample_stats = self.basic_stats
                 self.pair_support = int(self.pair_support)
+                logging.debug("pair support (ds ratio == 1): " + str(self.pair_support))
 
         self.coverage_logs = {}
 
         if pair_support != -1 and pair_support is not None:
+            logging.debug("self.pair_support =  " + str(pair_support))
             self.pair_support = pair_support
 
         if foldback_pair_support_min is not None:
-            logging.info("Min foldback pair support supplied by user.")
+            logging.info("Min foldback pair support supplied by user and set to " + str(foldback_pair_support_min))
             self.foldback_pair_support_min = foldback_pair_support_min
         else:
             self.foldback_pair_support_min = self.pair_support
@@ -336,6 +340,7 @@ class bam_to_breakpoint():
         wc_avg = []
         wc_std = []
         random.seed(global_names.SEED)
+        wc_ws_filter = []
         for ws in ws_list:
             wc_ws = []
             iteri = 0
@@ -380,16 +385,22 @@ class bam_to_breakpoint():
         (wc_300_median, wc_300_avg, wc_300_std) = (wc_median[1], wc_avg[1], wc_std[1])
         bamfile_pathname = str(self.bamfile.filename.decode())
         bamfile_filesize = os.path.getsize(bamfile_pathname)
-        self.pair_support = max(int(round((wc_300_avg / 10.0) * ((self.insert_size - self.read_length) / 2.0 / self.read_length)*(1/self.percent_proper))), 2)
+        self.pair_support = max(int(round((wc_300_avg / 10.0) * ((self.insert_size - self.read_length) / 2.0 / self.read_length)*(1/self.percent_proper))), self.pair_support_min)
         rstats = (wc_10000_median, wc_10000_avg, wc_10000_std, wc_300_median, wc_300_avg, wc_300_std, self.read_length,
                   self.insert_size, self.insert_std, self.min_insert, self.max_insert, self.pair_support,
                   self.percent_proper, self.num_sdevs, bamfile_filesize)
+        logging.debug("computed stats and set self.pair_support to " + str(self.pair_support))
         if refi == -1:
             self.basic_stats = rstats
             self.basic_stats_set = True
-            print("read length:", self.read_length, "insert size:", self.insert_size, "insert std dev:", self.insert_std,
-                  "max_insert:", self.max_insert, "percent proper:", percent_proper, "num_sdevs", self.num_sdevs)
-            print("coverage stats", self.basic_stats, len(wc_ws_filter))
+            logging.info(
+                "read length: {}, insert size: {}, insert std dev: {}, max_insert: {}, percent proper: {}, num_sdevs: {}".format(
+                    self.read_length, self.insert_size, self.insert_std, self.max_insert, self.percent_proper,
+                    self.num_sdevs))
+            logging.info(
+                "coverage stats - median 10k: {}, avg 10k: {}, std 10k: {}, median 300: {}, avg 300: {}, std 300: {}, num windows: {}".format(
+                    wc_10000_median, wc_10000_avg, wc_10000_std, wc_300_median, wc_300_avg, wc_300_std,
+                    len(wc_ws_filter)))
             coverage_stats_file = open(hg.DATA_REPO + "/coverage.stats", 'a')
             coverage_stats_file.write(os.path.abspath(self.bamfile.filename.decode('utf-8')) + '\t' + '\t'.join(map(str, rstats)) + '\n')
             coverage_stats_file.close()
@@ -409,6 +420,7 @@ class bam_to_breakpoint():
             r[11] = max(int(round((r[4] / 10.0) * ((r[7] - r[6]) / 2.0 / r[6])*(1.0/r[12]))), self.pair_support_min)
             self.pair_support = r[11]
             self.downsample_stats = r
+            logging.debug("Applied downsample ratio " + str(self.downsample_ratio) + " and set self.pair_support to " + str(self.pair_support))
 
         else:
             self.downsample_stats = self.basic_stats
