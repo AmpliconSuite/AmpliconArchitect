@@ -7,6 +7,12 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
 
 ### Recent updates:
 
+### April 2025 update
+- `1.5.r1` adds the following
+  - Bugfix to use of `--pair_support_min` arg
+  - Bugfix to edge case crash when computed CN seg segments at position 0 of a chromosome
+  - Logging improvements
+
 ### December 2024 update
 - `1.5.r0` adds the following features:
   - Caching of discordant read pairs during SV identification to reduce lookups on bam file. This gives a speedup of about 2x on average, but likely better returns on samples with incredibly large numbers of SVs.
@@ -27,9 +33,6 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
   - Provides more unified behavior between python2 & 3 usage when computing read pair support requirements.
   - Improves numerical stability of meanshift p-value calculation. 
 
-
-### February 2024 update
-- `1.3.r8` adds breakpoint microhomology detection from alignments marked as supplementary (not just secondary). Also improves granularity of sashimi plot visualizations of CN segments.
 
 **[Older update descriptions are available here.](https://docs.google.com/document/d/1jqnCs46hrpYGBGrZQFop31ezskyludxNJEQdZONwFdc/edit?usp=sharing)**
 
