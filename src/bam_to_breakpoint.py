@@ -835,7 +835,7 @@ class bam_to_breakpoint():
             self.mate_cache_hits+=1
 
         self.get_mates_time += time() - gmt
-        return self.mate_cache[(a.query_name, not a.is_read1)]
+        return self.mate_cache.get((a.query_name, not a.is_read1), None)
 
     def pair_support_count(self, chrom, position, strand, meanshift, foldup=False, sensitivems=True):
         #str(hg.interval(f[0][0][0].chrom, f[0][0][0].start, f[0][-1][0].end)), f[1], f[2]
@@ -1547,6 +1547,10 @@ class bam_to_breakpoint():
 
                 nmate = self.get_mates(hgddict[hga], mcdx_querynames)
                 get_mates_num_calls += 1
+                if nmate is None:
+                    logging.warning("Could not find mate for " + str(hgddict[hga].query_name) + " read1:" + str(str(hgddict[hga].is_read1)))
+                    continue
+
                 if filter_repeats:
                     if hg.interval(nmate, bamfile=self.bamfile).filter_repeat() or nmate.mapping_quality <= self.mapping_quality_cutoff:
                         continue
@@ -1578,6 +1582,11 @@ class bam_to_breakpoint():
                 for hgm in cn[1]:
                     get_mates_num_calls += 1
                     nmate = self.get_mates(hgndict[hgm], mcdx_querynames)
+                    if nmate is None:
+                        logging.warning("Could not find mate for " + str(hgndict[hgm].query_name) + " read1:" + str(
+                            str(hgndict[hgm].is_read1)))
+                        continue
+
                     if filter_repeats:
                         if (hg.interval(nmate, bamfile=self.bamfile).filter_repeat() or
                                 nmate.mapping_quality <= self.mapping_quality_cutoff):
