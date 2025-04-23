@@ -7,7 +7,8 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
 
 ### Recent updates:
 
-### April 2025 update
+### April 2025 updates
+- `1.5.r2` handles missing read mates during SV discovery (if mate removed from bam after alignment)
 - `1.5.r1` adds the following
   - Bugfix to use of `--pair_support_min` arg
   - Bugfix to edge case crash when computed CN seg segments at position 0 of a chromosome
