@@ -259,7 +259,7 @@ The SV view file is a PNG/PDF file displaying the underlying sequence signatures
 - The set of amplicon intervals (x-axis)
 - Window-based depth of coverage across the intervals represented as histogram (grey vertical bars)
 - Segmentation of the intervals based on coverage and copy number estimate of these segments represented by (horizontal black lines spanning the segment where the y-position of the line represents the copy number)
-- Discordant read pair clusters represented as arcs where color represents orientation of the reads. Red: Length discordant in expected orientation (forward-reverse), Brown: Everted read pairs (reverse-forward), Teal: Both reads map to forward strand and Magenta: Both reads map to the reverse strand. Vertical colored lines going to the top of the plot indicate connections to source vertex.
+- Discordant read pair clusters represented as arcs where color represents orientation of the reads. Red: Length discordant in expected orientation (forward-reverse, which is deletion-like), Brown: Everted read pairs (reverse-forward, which is duplication-like), Teal: Both reads map to reverse strand (left inversion-like) and Magenta: Both reads map to the forward strand (right inversion-like). Vertical colored lines going to the top of the plot indicate connections to source vertex (outside amplicon).
 Thickness of the arc qualitatively depicts the amount of paired-end read support.
 - Bottom panel may represent various annotations on the amplicon intervals where the default view displays oncogene annotations.
 
