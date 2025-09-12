@@ -297,77 +297,7 @@ class breakpoint_graph(abstract_graph):
                 self.copy_count[e] = float(l[2])
         return
 
-    def dijkstra_distance(self, v1, v2, min_count=0):
-        """Find shortest genomic path and distance between genomic locations (including strand) in the breakpoint graph with copy count = min_count.
-        Return none if not found
-        Return format:
-        (distance, path, traversal_copy_count)
-        distance: INT describing number of base-pairs in intermediate region
-        path: list of alternating (sequence edge, strand(1/-1)) and (breakpoint edge, strand(1,-1)) such that sequence edges in first/last entries contain v1/v2
-        """
-        for e in self.es.values():
-            if e.v1.chrom == v1.chrom and e.v1.pos <= v1.pos and v1.pos <= e.v2.pos:
-                e1 = e
-            if e.v1.chrom == v2.chrom and e.v1.pos <= v2.pos and v2.pos <= e.v2.pos:
-                e2 = e
-        if self.copy_count[e1] < min_count or self.copy_count[e2] < min_count:
-            return None
-        if v1.strand == v2.strand and e1 == e2 and (v2.pos - v1.pos) * v1.strand > 0:
-            return (abs(v1.pos - v2.pos - 1), [(e1, v1.strand)], self.copy_count[e1])
-        if v1.strand == 1:
-            distance = e1.v2.pos - v1.pos
-        else:
-            distance = v1.pos - e1.v1.pos
-        a = [(distance, [(e1, v1.strand)], self.copy_count[e1])]
-        heapq.heapify(a)
-        while len(a) > 0:
-            d, path, cc = heapq.heappop(a)
-            e, s = path[-1]
-            if s == 1:
-                e_new = e.v2.elist
-                v = e.v2
-            else:
-                e_new = e.v1.elist
-                v = e.v1
-            e_new = [e_next for e_next in e_new if e_next.edge_type != 'sequence']
-            e_search = []
-            for en in e_new:
-                min_c = min(cc, self.copy_count[en])
-                if min_c < min_count:
-                    continue
-                if v == en.v1:
-                    en_strand = 1
-                    v_seq = en.v2
-                else:
-                    en_strand = -1
-                    v_seq = en.v1
-                if (en, en_strand) in path:
-                    continue
-                if (en, -1 * en_strand) in path:
-                    min_c = min(min_c, self.copy_count[en] / 2.0)
-                    if min_c < min_count:
-                        continue
-                en_seq, en_seqstrand = [(es, 1 if v_seq == es.v1 else -1) for es in v_seq.elist if es.edge_type == 'sequence'][0]
-                min_c = min(min_c, self.copy_count[en_seq])
-                if min_c < min_count:
-                    continue
-                if (en_seq, en_seqstrand) in path and not (en_seq == e1 and e1 == e2 and en_seqstrand == v1.strand):
-                    continue
-                if (en_seq, -1 * en_seqstrand) in path:
-                    min_c = min(self.copy_count[en_seq] / 2.0, min_c)
-                    if min_c < min_count:
-                        continue
-                if en_seq == e2 and v2.strand == en_seqstrand:
-                    if v2.strand == 1:
-                        dd = d + v2.pos - e2.v1.pos
-                    else:
-                        dd = d + e2.v2.pos - v2.pos
-                    return (dd, path + [(en, en_strand), (en_seq, en_seqstrand)], min_c)
-                heapq.heappush(a, (d + en_seq.v2.pos - en_seq.v1.pos + 1, path + [(en, en_strand), (en_seq, en_seqstrand)], min_c))
-        return None
-
     def cycle_decomposition(self, w, s):
-
         """
         Decompose breakpoint_graph into 'simple' cycles.
         Simple cycles may contain a sequence edge atmost once along each strand.
@@ -431,8 +361,8 @@ class breakpoint_graph(abstract_graph):
                         continue
                     seenSet.add(v3)
                     heapq.heappush(a, (-1 * hdict[v3][0], v3))
-            if len(a) == 0 and not completed:
-                print("NOT COMPLETED", hce[1].v1)
+            # if len(a) == 0 and not completed:
+            #     print("NOT COMPLETED", hce[1].v1)
             s2Set = set()
             tc = hdict[hce[1].v1][1]
             v2 = hdict[hce[1].v1][2]
@@ -479,8 +409,9 @@ class breakpoint_graph(abstract_graph):
                     continue
                 tc, tcw = thickest_cycle(we[wei], w2)
                 if len(tc) < 2:
-                    print(str(tc[0]))
-                    exit()
+                    logging.error(f"Found invalid cycle with {len(tc)} edges: {tc}")
+                    raise ValueError(f"Cycle too short: {len(tc)} edges")
+
                 if tcw > tcwmax:
                     tcmax = tc
                     tcwmax = tcw
@@ -542,9 +473,9 @@ class breakpoint_graph(abstract_graph):
                 tc = tc[ci:] + tc[: ci]
                     
             if tcw == 0:
-                print("tcw is 0")
+                # print("tcw is 0")
                 break
-            print("Cycle ", cycle_number, ": Copy count = ",tcw, tc)
+            # print("Cycle ", cycle_number, ": Copy count = ",tcw, tc)
             cycle_edge_list = []
             ci = 1
             v0 = None
@@ -559,7 +490,6 @@ class breakpoint_graph(abstract_graph):
                 v0 = v1
                 v0c = v2
             elif v1.pos == -1 or v2.pos == -1:
-                print(v1, "->", v2)
                 cycle_edge_list.append((v1,v2))
             v1 = v2
             while ci < len(tc):
@@ -569,9 +499,7 @@ class breakpoint_graph(abstract_graph):
                     v2 = tc[ci].v1
                 if v1.pos == -1 or v2.pos == -1:
                     if v0 is not None:
-                        print(v0, "->", v0c)
                         cycle_edge_list.append((v0,v0c))
-                    print(v1, "->", v2)
                     cycle_edge_list.append((v1,v2))
                     v0 = None
                     v0c = None
@@ -583,14 +511,12 @@ class breakpoint_graph(abstract_graph):
                         v0c = v2
                 elif tc[ci].type() != 'concordant':
                     if v0 is not None:
-                        print(v0, "->", v0c)
                         cycle_edge_list.append((v0,v0c))
                         v0 = None
                         v0c = None
                 v1 = v2
                 ci += 1
             if v0 is not None:
-                print(v0, "->", v0c)
                 cycle_edge_list.append((v0,v0c))
             if amplicon_content_covered <= 0.9 * total_amplicon_content or (tcw > 0.2 * cycle_list[0][1]):
                 cycle_list.append([cycle_number, tcw, tc, cycle_edge_list])
@@ -634,7 +560,7 @@ class breakpoint_graph(abstract_graph):
         segment_list.sort()
         segi = 1
         segment_index = {}
-        for s in  [ss for ss in segment_list if ss[0].pos != -1 and ss[1].pos != -1]:
+        for s in [ss for ss in segment_list if ss[0].pos != -1 and ss[1].pos != -1]:
             segment_index[s] = segi
             segi += 1
         cycle_logger.info('List of cycle segments')
@@ -654,7 +580,7 @@ class breakpoint_graph(abstract_graph):
                     orientation_list.append('-')
             cycle_logger.info("Cycle=" + str(c[0]) + ";Copy_count=" + str(c[1]) + ";Segments=" + ','.join([str(e[0])+str(e[1]) for e in zip(seglist, orientation_list)]))
 
-        return None
+        return total_amplicon_content, amplicon_content_covered
 
     def __repr__(self):
         return '/n'.join(map(str, self.vs.values() + self.es.values())) + '\n'
@@ -856,7 +782,6 @@ class graph_decomposition(object):
         if cycle_list is None:
             ccnlist = [(c[1], c[0]) for c in self.cycle_dict.values()]
             ccnlist.sort(reverse=True)
-            print(ccnlist)
             cycle_list = [c[1] for c in ccnlist]
         fseq = ''
         if outfasta is not None:

@@ -132,8 +132,6 @@ def update_chrLen(len_list):
     for l in len_list:
         cpos = absPos(l[0], 1)
 
-
-
 def reverse_complement(seq):
     return ''.join([complementary_nucleotide[a] for a in seq][::-1])
 

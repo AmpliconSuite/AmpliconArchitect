@@ -17,7 +17,6 @@
 # IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE SOFTWARE PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERSITY OF CALIFORNIA HAS NO OBLIGATIONS TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 # Author: Viraj Deshpande
-# Contact: virajbdeshpande@gmail.com
 # Maintained by Jens Luebeck jluebeck@ucsd.edu
 
 import argparse
@@ -59,8 +58,19 @@ parser.add_argument('--ref', dest='ref',
                     action='store', type=str, choices=["hg19", "GRCh37", "GRCh38", "GRCh38_viral", "mm10", "GRCm38"], required=True)
 parser.add_argument('--no_cstats', dest='no_cstats', help="Do not re-use coverage statistics from coverage.stats.",
                     action='store_true', default=False)
+parser.add_argument('--logfile', dest='logfile',
+                    help="OPTIONAL: Log file path",
+                    action='store', type=str, default='')
 
 args = parser.parse_args()
+
+if args.logfile:
+    logging.basicConfig(
+        filename=args.logfile,
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        filemode='a'  # append mode
+    )
 
 global_names.REF = args.ref
 import ref_util as hg
@@ -129,6 +139,7 @@ if args.bam != "":
 
     bamFileb2b = b2b.bam_to_breakpoint(bamFile, coverage_stats=cstats)
     pre_int_list = []
+    filtered_count = 0
     for r in rdList:
         try:
             chrom_cov_ratio = bamFileb2b.median_coverage(refi=r)[0] / bamFileb2b.median_coverage()[0]
@@ -137,19 +148,25 @@ if args.bam != "":
                     bamFileb2b.median_coverage(refi=r)[0] / bamFileb2b.median_coverage()[0] > 0:
                 if r.size() < 10000000 or float(r.info[-1]) > 1.5*GAIN:
                     pre_int_list.append(r)
+                else:
+                    filtered_count += 1
 
             elif float(r.info[-1]) > 1 and args.ref == "GRCh38_viral" and not r.chrom.startswith("chr"):
                 pre_int_list.append(r)
 
+            else:
+                filtered_count += 1
+
         except ZeroDivisionError:
             logging.error("zero division error", r.chrom, args.ref, float(r.info[-1]))
-
+            filtered_count += 1
             # if float(r.info[-1]) > 1 and args.ref == "GRCh38_viral" and not r.chrom.startswith("chr"):
             #     pre_int_list.append(r)
             #
             continue
 
     rdList = hg.interval_list(pre_int_list)
+    logging.info("Filtered {} additional intervals on size and CN. Checking {} remaining intervals...".format(filtered_count, len(rdList)))
 
 amplicon_listl = rdList
 
@@ -160,6 +177,8 @@ for a in amplicon_listl:
             a.size() > max(1000000,
                            10 * sum([a.intersection(ci[1]).size() for ci in hg.interval_list([a]).intersection(cr)])) or
             a.size() - sum([a.intersection(ci[1]).size() for ci in hg.interval_list([a]).intersection(cr)]) > 2000000):
+
+        # checks if overlaps conserved gain regions
         if (len(hg.interval_list([a]).intersection(cr))) == 0:
             uc_list.append(a)
         else:
@@ -171,17 +190,29 @@ for a in amplicon_listl:
                 cpos = crai[1].end + 1000000
             if a.end > cpos:
                 uc_list.append(hg.interval(a.chrom, cpos, a.end, info=a.info))
+            else:
+                logging.info("Filtered interval {}:{}-{} {} (conserved high signal region)".format(a.chrom, a.start, a.end, a.info[-1]))
+
+    else:
+        logging.info("Filtered interval {}:{}-{} {} (conserved high signal region)".format(a.chrom, a.start, a.end, a.info[-1]))
 
 new_uc_list = []
 for a in uc_list:
     if args.ref == "GRCh38_viral" and not a.chrom.startswith("chr"):
         if a.rep_content() < 2.5:
             new_uc_list.append(a)
+        else:
+            logging.info("Filtered interval {}:{}-{} {} (repetitive content)".format(a.chrom, a.start, a.end, a.info[-1]))
+
     else:
         if float(a.info[-1]) * a.segdup_uniqueness() > GAIN and a.rep_content() < 2.5:
             new_uc_list.append(a)
+        else:
+            logging.info("Filtered interval {}:{}-{} {} (repetitive content)".format(a.chrom, a.start, a.end, a.info[-1]))
+
 
 uc_merge = hg.interval_list(new_uc_list).merge_clusters(extend=300000)
+logging.info("Merged nearby candidates into {} intervals".format(len(uc_merge)))
 
 with open(outname, "w") as outfile:
     for a in uc_merge:

@@ -34,7 +34,7 @@ import bisect
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse, Rectangle, Arc
+from matplotlib.patches import Rectangle, Arc
 import matplotlib.ticker as ticker
 from matplotlib import gridspec
 import random
@@ -185,6 +185,7 @@ class bam_to_breakpoint():
 
             logging.debug("Computed GC-corrected coverage on " + str(computed_intervals) + " wc intervals")
             return self.interval_coverage_calls[call_args]
+
         s2 = i.start
         e2 = i.end
         if i.start < 0:
@@ -2445,9 +2446,17 @@ class bam_to_breakpoint():
 
         logging.info("#TIME " + '%.3f\t'%(time() - self.tstart) + " Decomposing cycles...")
         init_time = time()
-        new_graph.cycle_decomposition(wehc, s)
+        total_amplicon_content, amplicon_content_covered = new_graph.cycle_decomposition(wehc, s)
+        fraction = amplicon_content_covered / total_amplicon_content if total_amplicon_content > 0 else 0.0
+        logging.info("#TIME " + '%.3f\t' % (
+                    time() - self.tstart) + " Amplicon weight: {:.3f}. Fraction decomposed: {:.3f}.".format(
+            total_amplicon_content, amplicon_content_covered, fraction))
+        summary_logger.info("#TotalAmpliconWeight = {:.3f}".format(total_amplicon_content))
+        summary_logger.info("#FractionWeightInDecomp = {:.8f}".format(fraction))
+
         self.decomp_time += time() - init_time
         logging.info("#TIME " + '%.3f\t'%(time() - self.tstart) + " Completed decomposition")
+
 
 
     # Plot coverage, meanshift copy count estimates and discordant edges in interval
