@@ -70,7 +70,7 @@ class breakpoint_cluster:
 class bam_to_breakpoint():
     def __init__(self, bamfile, sample_name='', read_length=100, max_insert=400, insert_size=300, num_sdevs=3,
         window_size=10000, min_coverage=30, pair_support=-1, pair_support_min=2, downsample=-1, coverage_stats=None,
-        coverage_windows=None, sensitivems=False, span_coverage=True, tstart=0, ext_dnlist=None, foldback_pair_support_min=2):
+        coverage_windows=None, sensitivems=False, span_coverage=True, tstart=0, ext_dnlist=None, foldback_pair_support_min=None):
         self.bamfile = bamfile
         self.sample_name = sample_name
         self.window_size = window_size
@@ -100,6 +100,7 @@ class bam_to_breakpoint():
             self.pair_support_min = pair_support_min
         else:
             self.pair_support_min = 2
+
         hg.update_chrLen([(c['SN'], c['LN']) for c in self.bamfile.header['SQ']])
         self.discordant_edge_calls = {}
         self.interval_coverage_calls = {}

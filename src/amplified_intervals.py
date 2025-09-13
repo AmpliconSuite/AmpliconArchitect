@@ -214,6 +214,7 @@ for a in uc_list:
 uc_merge = hg.interval_list(new_uc_list).merge_clusters(extend=300000)
 logging.info("Merged nearby candidates into {} intervals".format(len(uc_merge)))
 
+final_interval_count = 0
 with open(outname, "w") as outfile:
     for a in uc_merge:
         is_viral = False
@@ -221,6 +222,9 @@ with open(outname, "w") as outfile:
             is_viral = True
 
         if sum([ai.size() for ai in a[1]]) > CNSIZE_MIN or is_viral:
+            final_interval_count += 1
             outfile.write('\t'.join(
                 [str(a[0]), str(sum([ai.size() * float(ai.info[-1]) for ai in a[1]]) / sum([ai.size() for ai in a[1]])),
                  rdAlts]) + '\n')
+
+logging.info("Identified {} final seed intervals".format(final_interval_count))
