@@ -7,6 +7,9 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
 
 ### Recent updates:
 
+### September 2025 update
+- `1.5.r3` adds logging support for `amplified_intervals.py` to clarify reasons for interval filtering. AA also now logs the fraction of amplicon weight decomposed.
+
 ### April 2025 updates
 - `1.5.r2` handles missing read mates during SV discovery (if mate removed from bam after alignment)
 - `1.5.r1` adds the following
@@ -23,16 +26,6 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
   - Logging improvements
   - Typo fixes (PR by cmdcolin) 
 
-### June 2024 update
-- `1.4.r2` provides better handling of convergence failures during Mosek optimization and improves logging.
-
-### March 2024 update
-- `1.4.r1` adds the following updates:
-  - Reduces inverted sequence artifacts by about 50%, providing quality improvements to heavily artifacted samples.
-  - Bugfix to counting of foldback support reads & boundaries of foldback SVs. 
-  - Adds `--foldback_pair_support_min` argument to allow users to adjust read support requirement for foldback SV discovery.
-  - Provides more unified behavior between python2 & 3 usage when computing read pair support requirements.
-  - Improves numerical stability of meanshift p-value calculation. 
 
 
 **[Older update descriptions are available here.](https://docs.google.com/document/d/1jqnCs46hrpYGBGrZQFop31ezskyludxNJEQdZONwFdc/edit?usp=sharing)**
