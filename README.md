@@ -138,8 +138,6 @@ On the data repo download page, the suffix `indexed` indicates the BWA index is 
 
 **NOTE2:** The user should be aware that AA uses intermediate files with prefix provided to `--out`. If these files are already present then AA will reuse these files. If the user intends to run AA without using any prior data, then the user should ensure that these files are not already present in the provided path (See checkpoint and modularity section).
 
-**NOTE3:** The current docker script cannot accept paths with special characters including spaces. For paths with special characters, please install AA from the github source.
-
 ### Optional Arguments
 
 | Argument | Type  | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
