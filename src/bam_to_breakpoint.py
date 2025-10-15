@@ -2452,14 +2452,12 @@ class bam_to_breakpoint():
         fraction = amplicon_content_covered / total_amplicon_content if total_amplicon_content > 0 else 0.0
         logging.info("#TIME " + '%.3f\t' % (
                     time() - self.tstart) + " Amplicon weight: {:.3f}. Fraction decomposed: {:.3f}.".format(
-            total_amplicon_content, amplicon_content_covered, fraction))
+            total_amplicon_content, fraction))
         summary_logger.info("#TotalAmpliconWeight = {:.3f}".format(total_amplicon_content))
         summary_logger.info("#FractionWeightInDecomp = {:.8f}".format(fraction))
 
         self.decomp_time += time() - init_time
         logging.info("#TIME " + '%.3f\t'%(time() - self.tstart) + " Completed decomposition")
-
-
 
     # Plot coverage, meanshift copy count estimates and discordant edges in interval
     def plot_segmentation(self, ilist, amplicon_name, segments=[], scale_list=[], eilist=None, font='small'):
