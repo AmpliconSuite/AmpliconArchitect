@@ -2024,7 +2024,7 @@ class bam_to_breakpoint():
                     extend_left = 0
                     left_size = left_size // 2
         if self.interval_amplified(hg.interval(ic.chrom, max(0, ic.end - 2 * ms_window_size), min(ic.end + 2 * ms_window_size, hg.chrLen[hg.chrNum(ic.chrom)] - 1)), filter_small=False):
-            ic.end = min(ic.end + 10 * ms_window_size, hg.chrLen[hg.chrNum(ic.chrom)-1])
+            ic.end = min(ic.end + 10 * ms_window_size, hg.chrLen[hg.chrNum(ic.chrom)]-1)
         if self.interval_amplified(hg.interval(ic.chrom, max(ic.start - 2 * ms_window_size, 0), min(ic.start + 2 * ms_window_size, hg.chrLen[hg.chrNum(ic.chrom)] - 1)), filter_small=False):
             ic.start = max(ic.start - 10 * ms_window_size, 0)
         if strand >= 0:

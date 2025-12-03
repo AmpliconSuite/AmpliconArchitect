@@ -7,6 +7,9 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
 
 ### Recent updates:
 
+### December 2025 update
+- `1.5.r4` provides a bugfix to prevent interval ends from going 1bp beyond the length of the chromosome. Primarily affects viral ref samples.
+
 ### September 2025 update
 - `1.5.r3` adds logging support for `amplified_intervals.py` to clarify reasons for interval filtering. AA also now logs the fraction of amplicon weight decomposed.
 
