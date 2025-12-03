@@ -1982,9 +1982,9 @@ class bam_to_breakpoint():
             if extend_right >= 0:
                 if right_size < 1:
                     extend_right = -1
-                elif ic.end + right_size * ms_window_size > hg.chrLen[hg.chrNum(ic.chrom)]:
-                    if self.interval_amplified(hg.interval(ic.chrom, ic.end, hg.chrLen[hg.chrNum(ic.chrom)]), filter_small=False):
-                        ic.end = hg.chrLen[hg.chrNum(ic.chrom)]
+                elif ic.end + right_size * ms_window_size >= hg.chrLen[hg.chrNum(ic.chrom)]:
+                    if self.interval_amplified(hg.interval(ic.chrom, ic.end, hg.chrLen[hg.chrNum(ic.chrom)]-1), filter_small=False):
+                        ic.end = hg.chrLen[hg.chrNum(ic.chrom)] - 1
                         extend_right = -1
                     else:
                         extend_right = 0
@@ -2023,15 +2023,15 @@ class bam_to_breakpoint():
                 else:
                     extend_left = 0
                     left_size = left_size // 2
-        if self.interval_amplified(hg.interval(ic.chrom, max(0, ic.end - 2 * ms_window_size), min(ic.end + 2 * ms_window_size, hg.chrLen[hg.chrNum(ic.chrom)])), filter_small=False):
-            ic.end = min(ic.end + 10 * ms_window_size, hg.chrLen[hg.chrNum(ic.chrom)])
-        if self.interval_amplified(hg.interval(ic.chrom, max(ic.start - 2 * ms_window_size, 0), min(ic.start + 2 * ms_window_size, hg.chrLen[hg.chrNum(ic.chrom)])), filter_small=False):
+        if self.interval_amplified(hg.interval(ic.chrom, max(0, ic.end - 2 * ms_window_size), min(ic.end + 2 * ms_window_size, hg.chrLen[hg.chrNum(ic.chrom)] - 1)), filter_small=False):
+            ic.end = min(ic.end + 10 * ms_window_size, hg.chrLen[hg.chrNum(ic.chrom)-1])
+        if self.interval_amplified(hg.interval(ic.chrom, max(ic.start - 2 * ms_window_size, 0), min(ic.start + 2 * ms_window_size, hg.chrLen[hg.chrNum(ic.chrom)] - 1)), filter_small=False):
             ic.start = max(ic.start - 10 * ms_window_size, 0)
         if strand >= 0:
-            ide = self.interval_discordant_edges(hg.interval(ic.chrom, ic.end + 1, min(hg.chrLen[hg.chrNum(ic.chrom)], ic.end + ms_window_size)))
+            ide = self.interval_discordant_edges(hg.interval(ic.chrom, ic.end + 1, min(hg.chrLen[hg.chrNum(ic.chrom)] - 1, ic.end + ms_window_size)))
             for e in ide:
                 if e[0].v1.strand == 1:
-                    ic.end = min(ic.end + 2 * ms_window_size, hg.chrLen[hg.chrNum(ic.chrom)])
+                    ic.end = min(ic.end + 2 * ms_window_size, hg.chrLen[hg.chrNum(ic.chrom)] - 1)
                     break
         if strand <= 0:
             ide = self.interval_discordant_edges(hg.interval(ic.chrom, max(0, ic.start - ms_window_size), ic.start - 1))

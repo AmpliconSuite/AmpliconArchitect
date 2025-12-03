@@ -60,7 +60,7 @@ else:
 
 import global_names
 
-__version__ = "1.5.r3"
+__version__ = "1.5.r4"
 
 parser = argparse.\
 ArgumentParser(description="Reconstruct Amplicons connected to listed intervals.")
@@ -252,6 +252,9 @@ if sumlen > args.max_seed_len:
     sys.exit(1)
 
 rdList = hg.interval_list([r for r in rdList0])
+# Ensure does not spill over end of chromosome
+rdList = hg.interval_list([hg.interval(i.chrom, max(0, i.start), min(i.end, hg.chrLen[hg.chrNum(i.chrom)] - 1)) for i in rdList])
+
 cb = bamFile
 if cbam is not None:
     cb = cbam
@@ -314,7 +317,7 @@ if args.extendmode == 'VIRAL':
     alist = hg.interval_list([hg.interval(e[0].v1.chrom, e[0].v1.pos, e[0].v1.pos) for e in de] + [hg.interval(e[0].v2.chrom, e[0].v2.pos, e[0].v2.pos) for e in de] + rdList)
     alist.sort()
     rdList = hg.interval_list([i[0] for i in alist.merge_clusters(extend=5000000) if len(hg.interval_list([i[0]]).intersection(amplist) + hg.interval_list([i[0]]).intersection(rdList)) > 0 ])
-    rdList = hg.interval_list([hg.interval(i.chrom, max(0, i.start - 10000), min(i.end + 10000, hg.chrLen[hg.chrNum(i.chrom)])) for i in rdList])
+    rdList = hg.interval_list([hg.interval(i.chrom, max(0, i.start - 10000), min(i.end + 10000, hg.chrLen[hg.chrNum(i.chrom)] - 1)) for i in rdList])
     iout = open(outName + '.integration_search.out', 'w')
     iout.write(mystdout.getvalue())
     iout.close()
