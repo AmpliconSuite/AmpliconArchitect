@@ -57,41 +57,54 @@ def vcf_var_to_bp_pair(chrom, pos, ref, alt):
     return (v1, v2), hom_seq
 
 
-# determine the number of read pairs supporting an SV call
-# this does not cound split-reads (single-end), as that is not what AA uses.
-def get_sv_read_pair_support_from_vcf(fd, header_fields):
+def get_sv_read_pair_support_from_vcf(fd, header_fields, include_sr=False):
     ilist = fd['INFO'].rsplit(";")
     info_dict = {x.rsplit("=")[0]: x.rsplit("=")[1] for x in ilist if "=" in x}
     pr_support = None
-    # check PE and SR (delly, lumpy) - SR is single-end version - not checking for now
-    if 'PE' in info_dict:
-        pr_support = int(info_dict['PE'])
 
-    # check RP or REF (gridss) - REF is the single-end version - not checking for now
-    elif 'RP' in info_dict:
-        pr_support = int(info_dict['RP'])
+    # Check INFO field first
+    if include_sr:
+        # (delly, lumpy) - includes split reads
+        if "SU" in info_dict:
+            pr_support = int(info_dict['SU'])
+        # gridss2
+        elif "VF" in info_dict:
+            pr_support = int(info_dict['VF'])
+    else:
+        # (delly, lumpy) - paired-end only
+        if 'PE' in info_dict:
+            pr_support = int(info_dict['PE'])
+        # gridss - paired-end only
+        elif 'RP' in info_dict:
+            pr_support = int(info_dict['RP'])
 
-    elif 'FORMAT' in header_fields:
+    # If not found in INFO, check FORMAT field
+    if pr_support is None and 'FORMAT' in header_fields:
         sname = header_fields[-1]
         fkeys = fd['FORMAT'].rsplit(":")
         slist = fd[sname].rsplit(":")
+
         if len(fkeys) != len(slist):
-            logging.error("Format field defined a different number of fields than found in data! Skipping SV " + fd['ID'])
+            logging.error(
+                "Format field defined a different number of fields than found in data! Skipping SV " + fd['ID'])
             logging.error(str(fkeys))
             logging.error(str(slist))
             return 0
 
         format_dict = dict(zip(fkeys, slist))
-        # check format field for PR/SR (manta)
+
+        # check format field for PR/SR (manta) or DR/SR (svaba)
         if 'PR' in format_dict:
             pr_support = int(format_dict['PR'])
-
-        # check format field for DR (svaba)
+            if include_sr and 'SR' in format_dict:
+                pr_support += int(format_dict['SR'])
         elif 'DR' in format_dict:
             pr_support = int(format_dict['DR'])
+            if include_sr and 'SR' in format_dict:
+                pr_support += int(format_dict['SR'])
 
     if pr_support is None:
-        logging.warning("Could not find paired-end read support count for SV ID: " + fd['ID'])
+        logging.warning("Could not find read support count for SV ID: " + fd['ID'])
         pr_support = 0
 
     return pr_support
@@ -148,7 +161,7 @@ def read_vcf(vcf_file, filter_by_pass=True):
     return dlist, header_fields
 
 
-def sv_vcf_to_bplist(vcf_file, filter_by_pass=True):
+def sv_vcf_to_bplist(vcf_file, filter_by_pass=True, include_sr=False):
     dlist, hf = read_vcf(vcf_file, filter_by_pass)
     vcf_dnlist = []
     seen_bp_set = set()
@@ -158,7 +171,7 @@ def sv_vcf_to_bplist(vcf_file, filter_by_pass=True):
             if bp_pair not in seen_bp_set:
                 seen_bp_set.add(bp_pair)
                 seen_bp_set.add(bp_pair[::-1])
-                support = get_sv_read_pair_support_from_vcf(fd, hf)
+                support = get_sv_read_pair_support_from_vcf(fd, hf, include_sr)
                 if not hom_seq:
                     hom_seq, hom_len = None, None
                 else:

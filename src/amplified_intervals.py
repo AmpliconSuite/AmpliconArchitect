@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
-# This software is Copyright 2017 The Regents of the University of California. All Rights Reserved. Permission to copy, modify, and distribute this software and its documentation for educational, research and non-profit purposes, without fee, and without a written agreement is hereby granted, provided that the above copyright notice, this paragraph and the following three paragraphs appear in all copies. Permission to make commercial use of this software may be obtained by contacting:
+# This software is Copyright 2017 The Regents of the University of California. All Rights Reserved. Permission to copy,
+# modify, and distribute this software and its documentation for educational, research and non-profit purposes,
+# without fee, and without a written agreement is hereby granted, provided that the above copyright notice,
+# this paragraph and the following three paragraphs appear in all copies. Permission to make commercial use of this
+# software may be obtained by contacting:
 #
 # Office of Innovation and Commercialization
 #
@@ -12,9 +16,17 @@
 #
 # invent@ucsd.edu
 #
-# This software program and documentation are copyrighted by The Regents of the University of California. The software program and documentation are supplied "as is", without any accompanying services from The Regents. The Regents does not warrant that the operation of the program will be uninterrupted or error-free. The end-user understands that the program was developed for research purposes and is advised not to rely exclusively on the program for any reason.
+# This software program and documentation are copyrighted by The Regents of the University of California. The software
+# program and documentation are supplied "as is", without any accompanying services from The Regents. The Regents does
+# not warrant that the operation of the program will be uninterrupted or error-free. The end-user understands that the
+# program was developed for research purposes and is advised not to rely exclusively on the program for any reason.
 #
-# IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE SOFTWARE PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERSITY OF CALIFORNIA HAS NO OBLIGATIONS TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
+# IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR
+# CONSEQUENTIAL DAMAGES, INCLUDING LOST PROFITS, ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF
+# THE UNIVERSITY OF CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. THE UNIVERSITY OF CALIFORNIA
+# SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+# AND FITNESS FOR A PARTICULAR PURPOSE. THE SOFTWARE PROVIDED HEREUNDER IS ON AN "AS IS" BASIS, AND THE UNIVERSITY
+# OF CALIFORNIA HAS NO OBLIGATIONS TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 # Author: Viraj Deshpande
 # Maintained by Jens Luebeck jluebeck@ucsd.edu
@@ -23,12 +35,14 @@ import argparse
 import logging
 import os
 import sys
+import time
 
 import numpy as np
 import pysam
 
 import global_names
 
+start_time = time.time()
 sys.setrecursionlimit(10000)
 
 GAIN = 4.5
@@ -54,7 +68,9 @@ parser.add_argument('--cnsize_min', dest='cnsize_min',
                     help="OPTIONAL: Minimum size (in bp) for interval to be considered as a seed. Default: 100000",
                     action='store', type=int, default=CNSIZE_MIN)
 parser.add_argument('--ref', dest='ref',
-                    help="Values: [hg19, GRCh37, GRCh38, GRCh38_viral, mm10, GRCm38]. \"hg19\", \"GRCh38\", \"mm10\" : chr1, .. chrM etc / \"GRCh37\", \"GRCm38\" : '1', '2', .. 'MT' etc/ \"None\" : Do not use any annotations. AA can tolerate additional chromosomes not stated but accuracy and annotations may be affected.", metavar='STR',
+                    help="Values: [hg19, GRCh37, GRCh38, GRCh38_viral, mm10, GRCm38]. \"hg19\", \"GRCh38\", \"mm10\" : "
+                         "chr1, .. chrM etc / \"GRCh37\", \"GRCm38\" : '1', '2', .. 'MT' etc/ \"None\" : Do not use any annotations. "
+                         "AA can tolerate additional chromosomes not stated but accuracy and annotations may be affected.", metavar='STR',
                     action='store', type=str, choices=["hg19", "GRCh37", "GRCh38", "GRCh38_viral", "mm10", "GRCm38"], required=True)
 parser.add_argument('--no_cstats', dest='no_cstats', help="Do not re-use coverage statistics from coverage.stats.",
                     action='store_true', default=False)
@@ -109,10 +125,12 @@ for r in rdList0:
 
 rdList = hg.interval_list(tempL)
 
-# rdList = hg.interval_list([r for r in rdList0 if float(r.info[-1]) > GAIN or (args.ref == "GRCh38_viral" and not r.chrom.endswith("chr"))])
-
 if args.bam != "":
     import bam_to_breakpoint as b2b
+    import time
+
+    bam_filter_start = time.time()
+
     if os.path.splitext(args.bam)[-1] == '.cram':
         bamFile = pysam.Samfile(args.bam, 'rc')
     else:
@@ -136,17 +154,27 @@ if args.bam != "":
 
         coverage_stats_file.close()
 
-
     bamFileb2b = b2b.bam_to_breakpoint(bamFile, coverage_stats=cstats)
+
+    # OPTIMIZATION: Compute global median coverage once before loop
+    global_median_cov_start = time.time()
+    global_median_cov = bamFileb2b.median_coverage()[0]
+    global_median_cov_time = time.time() - global_median_cov_start
+    logging.info("Global median coverage calculation took {:.2f} seconds".format(global_median_cov_time))
+
     pre_int_list = []
     filtered_count = 0
+    interval_processing_start = time.time()
+
     for r in rdList:
         try:
-            chrom_cov_ratio = bamFileb2b.median_coverage(refi=r)[0] / bamFileb2b.median_coverage()[0]
+            # OPTIMIZATION: Compute interval median coverage once and reuse
+            interval_median_cov = bamFileb2b.median_coverage(refi=r)[0]
+            chrom_cov_ratio = interval_median_cov / global_median_cov
+
             # print("chrom ratio " + r.chrom + " " + str(chrom_cov_ratio))
-            if float(r.info[-1]) > GAIN + 2 * max(1.0, bamFileb2b.median_coverage(refi=r)[0] / bamFileb2b.median_coverage()[0]) - 2 and \
-                    bamFileb2b.median_coverage(refi=r)[0] / bamFileb2b.median_coverage()[0] > 0:
-                if r.size() < 10000000 or float(r.info[-1]) > 1.5*GAIN:
+            if float(r.info[-1]) > GAIN + 2 * max(1.0, chrom_cov_ratio) - 2 and chrom_cov_ratio > 0:
+                if r.size() < 10000000 or float(r.info[-1]) > 1.5 * GAIN:
                     pre_int_list.append(r)
                 else:
                     filtered_count += 1
@@ -160,13 +188,18 @@ if args.bam != "":
         except ZeroDivisionError:
             logging.error("zero division error", r.chrom, args.ref, float(r.info[-1]))
             filtered_count += 1
-            # if float(r.info[-1]) > 1 and args.ref == "GRCh38_viral" and not r.chrom.startswith("chr"):
-            #     pre_int_list.append(r)
-            #
             continue
 
+    interval_processing_time = time.time() - interval_processing_start
+    bam_filter_total_time = time.time() - bam_filter_start
+
     rdList = hg.interval_list(pre_int_list)
-    logging.info("Filtered {} additional intervals on size and CN. Checking {} remaining intervals...".format(filtered_count, len(rdList)))
+    logging.info(
+        "Filtered {} additional intervals on size and CN. Checking {} remaining intervals...".format(filtered_count,
+                                                                                                     len(rdList)))
+    logging.info("Interval processing took {:.2f} seconds ({:.2f} sec/interval)".format(
+        interval_processing_time, interval_processing_time / len(rdList) if len(rdList) > 0 else 0))
+    logging.info("Total BAM filtering took {:.2f} seconds".format(bam_filter_total_time))
 
 amplicon_listl = rdList
 
@@ -228,3 +261,4 @@ with open(outname, "w") as outfile:
                  rdAlts]) + '\n')
 
 logging.info("Identified {} final seed intervals".format(final_interval_count))
+logging.info("Total amplified_intervals.py runtime: {:.2f} seconds".format(time.time() - start_time))
