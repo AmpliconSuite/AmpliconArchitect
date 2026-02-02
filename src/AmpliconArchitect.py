@@ -60,7 +60,7 @@ else:
 
 import global_names
 
-__version__ = "1.5.r4"
+__version__ = "1.5.r5"
 
 parser = argparse.\
 ArgumentParser(description="Reconstruct Amplicons connected to listed intervals.")
