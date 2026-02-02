@@ -178,10 +178,12 @@ def sv_vcf_to_bplist(vcf_file, filter_by_pass=True, include_sr=False):
                     hom_len = len(hom_seq)
                 bref = breakpoint_edge(bp_pair[0], bp_pair[1], hom_seq=hom_seq, hom=hom_len, externally_called=True)
                 bref.edge_type = bref.type()
-                vcf_dnlist.append((bref, support))
+                if not bref.edge_type == 'concordant':
+                    vcf_dnlist.append((bref, support))
                 bref_rev = breakpoint_edge(bp_pair[1], bp_pair[0], hom_seq=rev_complement(hom_seq), hom=hom_len, externally_called=True)
                 bref_rev.edge_type = bref.type()
-                vcf_dnlist.append((bref_rev, support))
+                if not bref_rev.edge_type == 'concordant':
+                    vcf_dnlist.append((bref_rev, support))
 
 
     logging.info("Read " + str(len(vcf_dnlist) // 2) + " SV calls from " + vcf_file)

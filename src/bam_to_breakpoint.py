@@ -1686,8 +1686,11 @@ class bam_to_breakpoint():
                     e_to_add.append(e_a_new)
 
         if e_to_add:
-            logging.info("#TIME " + '%.3f\t'%(time() - TSTART) + " added " + str(len(e_to_add)) + " sufficiently supported externally-provided discordant edges in intervals " + str(ilist))
-
+            logging.info("#TIME " + '%.3f\t' % (time() - TSTART) +
+                         " added " + str(len(e_to_add)) +
+                         " sufficiently supported externally-provided discordant edges in intervals " +
+                         ', '.join(str(x) for x in ilist))
+            
         dnlist.extend(e_to_add)
         # final_dnlist = []
         for e in dnlist:
