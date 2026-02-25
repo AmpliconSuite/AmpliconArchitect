@@ -7,6 +7,9 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
 
 ### Recent updates:
 
+### February 2026 update
+- `1.5.r5` refactors `amplified_intervals.py` to gain a modest speedup on high coverage samples and allows single-end reads to contribute to support counts from externally provided SV VCFs.
+
 ### December 2025 update
 - `1.5.r4` provides a bugfix to prevent interval ends from going 1bp beyond the length of the chromosome. Primarily affects viral ref samples.
 
