@@ -100,6 +100,7 @@ def call_mosek_scopt(n, m, asub, aval, coeff_c, coeff_f, coeff_g, const_h):
 
             if task.getsolsta(mosek.soltype.itr) != mosek.solsta.optimal:
                 logging.error("Failed to solve to optimality. Solution status {}. Returning initial coefficients.".format(task.getsolsta(mosek.soltype.itr)))
+                logging.error("Due to failure to solve, copy numbers reported by AA will not be reliable!")
                 filename = save_mosek_input(n, m, asub, aval, coeff_c, coeff_f, coeff_g, const_h)
                 mosek_logger.info(
                     "Saved MOSEK inputs to {}. Submit that file to support to reproduce the issue.".format(filename))
@@ -156,6 +157,7 @@ def call_mosek_acc(n, m, asub, aval, coeff_c, coeff_f):
 
         if task.getsolsta(mosek.soltype.itr) != mosek.solsta.optimal:
             logging.error("Failed to solve to optimality. Solution status {}".format(task.getsolsta(mosek.soltype.itr)))
+            logging.error("Due to failure to solve, copy numbers reported by AA will not be reliable!")
             filename = save_mosek_input(n, m, asub, aval, coeff_c, coeff_f)
             mosek_logger.info(
                 "Saved MOSEK inputs to {}. Submit that file to support to reproduce the issue.".format(filename))
@@ -201,6 +203,7 @@ def call_mosek_fusion(n, m, asub, aval, coeff_c, coeff_f):
 
         if M.getPrimalSolutionStatus() != SolutionStatus.Optimal:
             logging.error("Failed to solve to optimality. Solution status {}. Returning initial coefficients.".format(M.getPrimalSolutionStatus()))
+            logging.error("Due to failure to solve, copy numbers reported by AA will not be reliable!")
             filename = save_mosek_input(n, m, asub, aval, coeff_c, coeff_f)
             mosek_logger.info(
                 "Saved MOSEK inputs to {}. Submit that file to support to reproduce the issue.".format(filename))

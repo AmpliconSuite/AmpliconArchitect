@@ -363,19 +363,18 @@ class breakpoint_graph(abstract_graph):
                     heapq.heappush(a, (-1 * hdict[v3][0], v3))
             # if len(a) == 0 and not completed:
             #     print("NOT COMPLETED", hce[1].v1)
-            s2Set = set()
+            # s2Set = set()
             tc = hdict[hce[1].v1][1]
             v2 = hdict[hce[1].v1][2]
-            while v2 != hce[1].v1: #and not v2 in s2Set:
-                # print hce[1].v1, v2, s2Set
-                s2Set.add(v2)
+            while v2 is not None and v2 != hce[1].v1: #and not v2 in s2Set:
+                # s2Set.add(v2)
                 # if v2 not in hdict:
                 #     print(str(v2), str(hce[1].v1), str(tc))
                 #     for ee in hce[1].v1.elist:
                 #         print(str(ee), wehc[ee])
                 tc = hdict[v2][1] + tc
                 v2 = hdict[v2][2]
-                s2Set.add(v2)
+                # s2Set.add(v2)
             #     print v2, tc
             return tc, hdict[hce[1].v1][0]
 
@@ -396,10 +395,6 @@ class breakpoint_graph(abstract_graph):
             tchmax = None
             tchw = -1
 
-            # print "EEEEEEEEEEEEEE", len(w2)
-            # for e in w2:
-            #     print "EEEEEEEEEEEE", str(e), e.edge_type, w2[e]
-            # print "EEEEEEEEE========================"
             while wei < len(we):# and (tcwmax == -1 or we[wei][0] >= tcwmax / 2.0):
                 # if we[wei][1].edge_type == 'sequence':
                 #     wei += 1
@@ -409,8 +404,10 @@ class breakpoint_graph(abstract_graph):
                     continue
                 tc, tcw = thickest_cycle(we[wei], w2)
                 if len(tc) < 2:
-                    logging.error(f"Found invalid cycle with {len(tc)} edges: {tc}")
-                    raise ValueError(f"Cycle too short: {len(tc)} edges")
+                    logging.error("Found invalid cycle with {} edges: {}".format(len(tc), tc))
+                    for e in tc:
+                        w2[e] = 0.0
+                    continue
 
                 if tcw > tcwmax:
                     tcmax = tc

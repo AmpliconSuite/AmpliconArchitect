@@ -2297,7 +2297,16 @@ class bam_to_breakpoint():
             # else:
             #     new_graph.new_edge(ngvlist[nei-1], ngvlist[nei])
         for e in koe:
+            if (e.v1.pos == -1 or e.v2.pos == -1) and (e.v1.pos == 0 or e.v2.pos == 0):
+                logging.debug("#TIME " + '%.3f\t' % (time() - self.tstart) +
+                              "Assigning decomposition weight 0 to source edge at contig start: " + str(e) +
+                              " edge_type=" + str(e.edge_type) +
+                              " v1=" + str(e.v1) + " v2=" + str(e.v2) +
+                              " koe=" + str(koe[e]))
+                koe[e] = 0
+                continue
             koe[e] = max(0.0001, koe[e])
+
         # set up all constants
         logging.info("#TIME " + '%.3f\t'%(time() - self.tstart) + " Optimizing graph copy number flow")
         C = self.median_coverage()[0] / 2
