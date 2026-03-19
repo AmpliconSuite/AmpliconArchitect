@@ -7,6 +7,9 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
 
 ### Recent updates:
 
+### March 2026 update
+- `1.5.r6` adds bugfixes for some `GRCh38_viral` ref amplicons having a graph decomposition source node at contig position 0, resulting in a MOSEK graph optimization solve failure and subsequent cycle decomposition crash.
+
 ### February 2026 update
 - `1.5.r5` refactors `amplified_intervals.py` to gain a modest speedup on high coverage samples and allows single-end reads to contribute to support counts from externally provided SV VCFs.
 
@@ -30,8 +33,7 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
   - Optimization to intersection detection implemented in AA. Results in a small speedup.
   - Add support for parsing of SV VCF generated in GRIDSS having extra column for normal.
   - Logging improvements
-  - Typo fixes (PR by cmdcolin) 
-
+  - Typo fixes (PR by cmdcolin)
 
 
 **[Older update descriptions are available here.](https://docs.google.com/document/d/1jqnCs46hrpYGBGrZQFop31ezskyludxNJEQdZONwFdc/edit?usp=sharing)**
