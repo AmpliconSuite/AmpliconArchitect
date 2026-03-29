@@ -1327,16 +1327,16 @@ class bam_to_breakpoint():
                             vl1Set.add((aq1.reference_start, aq1.reference_end))
                             vl2Set.add((aq2.reference_start, aq2.reference_end))
 
-                if len(vl) == 0 or len([v for v in vl if v[1].reference_start*v[0].reference_start > 0]) == 0:
+                if len(vl) == 0 or len([v for v in vl if v[1].reference_start*v[0].reference_start >= 0]) == 0:
                     continue
                 if not vl[0][0].is_reverse:
-                    bp1 = breakpoint_vertex(c1[0].chrom, max([v[0].reference_end - 1 for v in vl if v[0].reference_start > 0]), 1)
+                    bp1 = breakpoint_vertex(c1[0].chrom, max([v[0].reference_end - 1 for v in vl if v[0].reference_start >= 0]), 1)
                 else:
-                    bp1 = breakpoint_vertex(c1[0].chrom, min([v[0].reference_start for v in vl if v[0].reference_start > 0]), -1)
+                    bp1 = breakpoint_vertex(c1[0].chrom, min([v[0].reference_start for v in vl if v[0].reference_start >= 0]), -1)
                 if not vl[0][1].is_reverse:
-                    bp2 = breakpoint_vertex(c2[0].chrom, max([v[1].reference_end - 1 for v in vl if v[1].reference_start > 0]), 1)
+                    bp2 = breakpoint_vertex(c2[0].chrom, max([v[1].reference_end - 1 for v in vl if v[1].reference_start >= 0]), 1)
                 else:
-                    bp2 = breakpoint_vertex(c2[0].chrom, min([v[1].reference_start for v in vl if v[1].reference_start > 0]), -1)
+                    bp2 = breakpoint_vertex(c2[0].chrom, min([v[1].reference_start for v in vl if v[1].reference_start >= 0]), -1)
 
 
                 # if len(vl) > 2:
@@ -1431,8 +1431,8 @@ class bam_to_breakpoint():
                             logging.debug("all foldback supports for bp had same alignment positions")
                             continue
 
-                        bp1 = breakpoint_vertex(c1[0].chrom, max([v[0].reference_end - 1 for v in vl if v[0].reference_start > 0]), 1)
-                        bp2 = breakpoint_vertex(c2[0].chrom, max([v[1].reference_end - 1 for v in vl if v[1].reference_start > 0]), 1)
+                        bp1 = breakpoint_vertex(c1[0].chrom, max([v[0].reference_end - 1 for v in vl if v[0].reference_start >= 0]), 1)
+                        bp2 = breakpoint_vertex(c2[0].chrom, max([v[1].reference_end - 1 for v in vl if v[1].reference_start >= 0]), 1)
                         if bp1.pos != bp2.pos:
                             bp1c = bp2
                             bp2c = bp1
@@ -1454,8 +1454,8 @@ class bam_to_breakpoint():
                             logging.debug("all foldback supports for bp had same alignment positions")
                             continue
 
-                        bp1 = breakpoint_vertex(c1[0].chrom, min([v[0].reference_start for v in vl if v[0].reference_start > 0]), -1)
-                        bp2 = breakpoint_vertex(c2[0].chrom, min([v[1].reference_start for v in vl if v[1].reference_start > 0]), -1)
+                        bp1 = breakpoint_vertex(c1[0].chrom, min([v[0].reference_start for v in vl if v[0].reference_start >= 0]), -1)
+                        bp2 = breakpoint_vertex(c2[0].chrom, min([v[1].reference_start for v in vl if v[1].reference_start >= 0]), -1)
                         if bp1.pos != bp2.pos:
                             bp1c = bp2
                             bp2c = bp1
@@ -1601,20 +1601,20 @@ class bam_to_breakpoint():
                         vl1Set.add((nmate.reference_start, nmate.reference_end))
                         vl2Set.add((hgndict[hgm].reference_start, hgndict[hgm].reference_end))
 
-                if len(vl) == 0 or len([v for v in vl if v[1].reference_start*v[0].reference_start > 0]) == 0:
+                if len(vl) == 0 or len([v for v in vl if v[1].reference_start*v[0].reference_start >= 0]) == 0:
                     continue
                 if not vl[0][0].is_reverse:
                     bp1 = breakpoint_vertex(vl[0][0].reference_name,
                                             max([v[0].reference_end - 1 for v in vl]), 1)
                 else:
                     bp1 = breakpoint_vertex(vl[0][0].reference_name,
-                                            min([v[0].reference_start for v in vl if v[0].reference_start > 0]), -1)
+                                            min([v[0].reference_start for v in vl if v[0].reference_start >= 0]), -1)
                 if not vl[0][1].is_reverse:
                     bp2 = breakpoint_vertex(vl[0][1].reference_name,
                                             max([v[1].reference_end - 1 for v in vl]), 1)
                 else:
                     bp2 = breakpoint_vertex(vl[0][1].reference_name,
-                                            min([v[1].reference_start for v in vl if v[1].reference_start > 0]), -1)
+                                            min([v[1].reference_start for v in vl if v[1].reference_start >= 0]), -1)
                 if ms is None:
                     ps = pair_support
                 else:
