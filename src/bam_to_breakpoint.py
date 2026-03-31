@@ -96,10 +96,12 @@ class bam_to_breakpoint():
         self.mapping_quality_cutoff = 5
         self.breakpoint_mapping_quality_cutoff = 20
         self.breakpoint_entropy_cutoff = 0.75
-        if not pair_support_min is None:
+        if pair_support_min is not None:
             self.pair_support_min = pair_support_min
+            self.pair_support_min_auto = False
         else:
             self.pair_support_min = 2
+            self.pair_support_min_auto = True
 
         hg.update_chrLen([(c['SN'], c['LN']) for c in self.bamfile.header['SQ']])
         self.discordant_edge_calls = {}
@@ -131,7 +133,8 @@ class bam_to_breakpoint():
                 rr = self.downsample_ratio
                 rsq = math.sqrt(rr)
                 r = [i[0] * i[1] for i in zip([rr, rr, rsq, rr, rr, rsq, 1, 1, 1, 1, 1, 1, 1], r)]
-                r[11] = max(int(round((r[4] / 10.0) * ((r[7] - r[6]) / 2.0 / r[6])*(1.0/r[12]))), self.pair_support_min)
+                psm = max(self.pair_support_min, int(round(self.pair_support_min * r[4] / 10.0))) if self.pair_support_min_auto else self.pair_support_min
+                r[11] = max(int(round((r[4] / 10.0) * ((r[7] - r[6]) / 2.0 / r[6])*(1.0/r[12]))), psm)
                 self.pair_support = r[11]
                 logging.debug("pair support (ds ratio != 1): " + str(self.pair_support))
                 self.downsample_stats = r
@@ -417,10 +420,11 @@ class bam_to_breakpoint():
             self.downsample_ratio = float(self.downsample) / self.basic_stats[0] if self.basic_stats[0] > float(self.downsample) else 1
         if self.downsample_ratio != 1:
             rr = self.downsample_ratio
-            rsq = math.sqrt(rr)         
+            rsq = math.sqrt(rr)
             r = [i[0] * i[1] for i in zip([rr, rr, rsq, rr, rr, rsq, 1, 1, 1, 1, 1, 1, 1, 1, 1], r)]
             # max(int(wc_300_avg / 10.0 ) * ((insert_size - read_length) / 2.0 / read_length) * percent_proper
-            r[11] = max(int(round((r[4] / 10.0) * ((r[7] - r[6]) / 2.0 / r[6])*(1.0/r[12]))), self.pair_support_min)
+            psm = max(self.pair_support_min, int(round(self.pair_support_min * r[4] / 10.0))) if self.pair_support_min_auto else self.pair_support_min
+            r[11] = max(int(round((r[4] / 10.0) * ((r[7] - r[6]) / 2.0 / r[6])*(1.0/r[12]))), psm)
             self.pair_support = r[11]
             self.downsample_stats = r
             logging.debug("Applied downsample ratio " + str(self.downsample_ratio) + " and set self.pair_support to " + str(self.pair_support))

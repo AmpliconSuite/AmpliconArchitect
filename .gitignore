@@ -3,3 +3,4 @@ src/*.pyc
 .idea/
 venv/
 .DS_Store
+CLAUDE.md

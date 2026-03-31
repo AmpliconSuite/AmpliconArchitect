@@ -292,7 +292,7 @@ This file provides the list of discordant edges in the amplicon. If this file is
 
 
 ## The AA Algorithm
-A full description of the methods and detailed characterization of copy number amplifications and ecDNA can be found in the manuscript referenced in the introduction.
+A full description of the methods and detailed characterization of copy number amplifications and ecDNA can be found in the manuscript referenced in the introduction. For a detailed technical reference covering control flow, algorithms, and parameters for each pipeline stage, see [`docs/algorithm_reference.md`](docs/algorithm_reference.md).
 ### Definitions:
 1. Amplicon: A set of genomic intervals connected together and amplified in copy number
 2. Amplicon structure(s): Ordered list(s) of segments from the amplicon intervals present in the sample.

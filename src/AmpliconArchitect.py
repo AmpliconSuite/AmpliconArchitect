@@ -60,7 +60,7 @@ else:
 
 import global_names
 
-__version__ = "1.5.r6"
+__version__ = "1.5.r7"
 
 parser = argparse.\
 ArgumentParser(description="Reconstruct Amplicons connected to listed intervals.")
@@ -127,8 +127,8 @@ parser.add_argument('--insert_sdevs', dest='insert_sdevs',
                     " with high variance after insert size selection step. (default 3.0)", metavar='FLOAT',
                     action='store', type=float, default=3)
 parser.add_argument('--pair_support_min', dest='pair_support_min',
-                    help="Number of read pairs for minimum breakpoint support (default 2 but typically becomes higher due"
-                    " to coverage-scaled cutoffs)", metavar='INT', action='store', type=int, default=2)
+                    help="Number of read pairs for minimum breakpoint support (default auto-scaled with coverage, "
+                    "minimum 2 at 10x)", metavar='INT', action='store', type=int, default=None)
 parser.add_argument('--foldback_pair_support_min', help="Number of read pairs for minimum foldback SV support "
                     "(default 2 but typically becomes higher due to coverage-scaled cutoffs). Used value will be the maximum"
                     " of pair_support and this argument. Raising to 3 will help dramatically in heavily artifacted samples.",
