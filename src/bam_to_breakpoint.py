@@ -70,7 +70,8 @@ class breakpoint_cluster:
 class bam_to_breakpoint():
     def __init__(self, bamfile, sample_name='', read_length=100, max_insert=400, insert_size=300, num_sdevs=3,
         window_size=10000, min_coverage=30, pair_support=-1, pair_support_min=2, downsample=-1, coverage_stats=None,
-        coverage_windows=None, sensitivems=False, span_coverage=True, tstart=0, ext_dnlist=None, foldback_pair_support_min=None):
+        coverage_windows=None, sensitivems=False, span_coverage=True, tstart=0, ext_dnlist=None, foldback_pair_support_min=None,
+        write_coverage_stats=True):
         self.bamfile = bamfile
         self.sample_name = sample_name
         self.window_size = window_size
@@ -407,9 +408,10 @@ class bam_to_breakpoint():
                 "coverage stats - median 10k: {}, avg 10k: {}, std 10k: {}, median 300: {}, avg 300: {}, std 300: {}, num windows: {}".format(
                     wc_10000_median, wc_10000_avg, wc_10000_std, wc_300_median, wc_300_avg, wc_300_std,
                     len(wc_ws_filter)))
-            coverage_stats_file = open(hg.DATA_REPO + "/coverage.stats", 'a')
-            coverage_stats_file.write(os.path.abspath(self.bamfile.filename.decode('utf-8')) + '\t' + '\t'.join(map(str, rstats)) + '\n')
-            coverage_stats_file.close()
+            if write_coverage_stats:
+                coverage_stats_file = open(hg.DATA_REPO + "/coverage.stats", 'a')
+                coverage_stats_file.write(os.path.abspath(self.bamfile.filename.decode('utf-8')) + '\t' + '\t'.join(map(str, rstats)) + '\n')
+                coverage_stats_file.close()
 
         r = rstats
         if self.downsample < 0 or self.downsample > self.basic_stats[0]:

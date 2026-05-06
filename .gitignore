@@ -4,3 +4,4 @@ src/*.pyc
 venv/
 .DS_Store
 CLAUDE.md
+AGENTS.md

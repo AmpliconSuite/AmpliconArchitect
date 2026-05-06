@@ -72,7 +72,7 @@ parser.add_argument('--ref', dest='ref',
                          "chr1, .. chrM etc / \"GRCh37\", \"GRCm38\" : '1', '2', .. 'MT' etc/ \"None\" : Do not use any annotations. "
                          "AA can tolerate additional chromosomes not stated but accuracy and annotations may be affected.", metavar='STR',
                     action='store', type=str, choices=["hg19", "GRCh37", "GRCh38", "GRCh38_viral", "mm10", "GRCm38"], required=True)
-parser.add_argument('--no_cstats', dest='no_cstats', help="Do not re-use coverage statistics from coverage.stats.",
+parser.add_argument('--no_cstats', dest='no_cstats', help="Do not read or write coverage statistics from coverage.stats.",
                     action='store_true', default=False)
 parser.add_argument('--logfile', dest='logfile',
                     help="OPTIONAL: Log file path",
@@ -154,7 +154,7 @@ if args.bam != "":
 
         coverage_stats_file.close()
 
-    bamFileb2b = b2b.bam_to_breakpoint(bamFile, coverage_stats=cstats)
+    bamFileb2b = b2b.bam_to_breakpoint(bamFile, coverage_stats=cstats, write_coverage_stats=not args.no_cstats)
 
     # OPTIMIZATION: Compute global median coverage once before loop
     global_median_cov_start = time.time()

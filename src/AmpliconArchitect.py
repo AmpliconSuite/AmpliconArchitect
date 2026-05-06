@@ -133,7 +133,7 @@ parser.add_argument('--foldback_pair_support_min', help="Number of read pairs fo
                     "(default 2 but typically becomes higher due to coverage-scaled cutoffs). Used value will be the maximum"
                     " of pair_support and this argument. Raising to 3 will help dramatically in heavily artifacted samples.",
                     metavar='INT', action='store', type=int)
-parser.add_argument('--no_cstats', dest='no_cstats', help="Do not re-use coverage statistics from coverage.stats.",
+parser.add_argument('--no_cstats', dest='no_cstats', help="Do not read or write coverage statistics from coverage.stats.",
                     action='store_true', default=False)
 parser.add_argument('--random_seed', dest="random_seed",
                     help="Set flag to use the numpy default random seed (sets np.random.seed(seed=None)), otherwise will"
@@ -263,7 +263,7 @@ if cbam is not None:
 
 cstats = None
 if args.no_cstats:
-    logging.info("#TIME " + '%.3f\t'%(time() - TSTART) + "--no_cstats was set. Will not attempt to re-use coverage.stats info")
+    logging.info("#TIME " + '%.3f\t'%(time() - TSTART) + "--no_cstats was set. Will not attempt to read or write coverage.stats info")
 
 if os.path.exists(os.path.join(hg.DATA_REPO, "coverage.stats")) and not args.no_cstats:
     coverage_stats_file = open(os.path.join(hg.DATA_REPO, "coverage.stats"))
@@ -295,7 +295,8 @@ if cbed is not None:
     coverage_windows.sort()
 if cstats is None and cbam is not None:
     cbam2b = b2b.bam_to_breakpoint(cbam, sample_name=outName, num_sdevs=args.insert_sdevs, pair_support_min=args.pair_support_min,
-                                   coverage_stats=cstats, coverage_windows=coverage_windows, foldback_pair_support_min=args.foldback_pair_support_min)
+                                   coverage_stats=cstats, coverage_windows=coverage_windows, foldback_pair_support_min=args.foldback_pair_support_min,
+                                   write_coverage_stats=not args.no_cstats)
     cstats = cbam2b.basic_stats
 
 if args.sv_vcf:
@@ -306,7 +307,8 @@ else:
 bamFileb2b = b2b.bam_to_breakpoint(bamFile, sample_name=outName, num_sdevs=args.insert_sdevs, pair_support_min=args.pair_support_min,
                                    coverage_stats=cstats, coverage_windows=coverage_windows, downsample=args.downsample,
                                    sensitivems=(args.sensitivems == 'True'), span_coverage=(args.cbam is None), tstart=TSTART,
-                                   ext_dnlist=ext_dnlist, foldback_pair_support_min=args.foldback_pair_support_min)
+                                   ext_dnlist=ext_dnlist, foldback_pair_support_min=args.foldback_pair_support_min,
+                                   write_coverage_stats=not args.no_cstats)
 logging.info("Pair support requirement: " + str(bamFileb2b.pair_support))
 segments = []
 
