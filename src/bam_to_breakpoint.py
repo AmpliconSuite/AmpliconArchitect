@@ -111,7 +111,7 @@ class bam_to_breakpoint():
         self.ext_dnlist = ext_dnlist if ext_dnlist else []
         if coverage_stats is None:
             self.basic_stats_set = False
-            self.median_coverage(window_list=coverage_windows)
+            self.median_coverage(window_list=coverage_windows, write_coverage_stats=write_coverage_stats)
             logging.debug("Coverage stats given to b2b was None")
         else:
             (wc_10000_median, wc_10000_avg, wc_10000_std, wc_300_median, wc_300_avg, wc_300_std, self.read_length,
@@ -257,7 +257,7 @@ class bam_to_breakpoint():
             yield (k, self.interval_coverage(k, gcc=gcc, clip=clip))
         # return [(k, self.interval_coverage(k, gcc=gcc)) for k in jj]
 
-    def median_coverage(self, window_size=-1, gcc=False, refi=-1, window_list=None):
+    def median_coverage(self, window_size=-1, gcc=False, refi=-1, window_list=None, write_coverage_stats=True):
         if (window_size == 10000 or window_size == -1) and self.basic_stats_set and refi == -1:
             return self.downsample_stats
         if window_size == 300 and self.basic_stats_set and refi == -1:
