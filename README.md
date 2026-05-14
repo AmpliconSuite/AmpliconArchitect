@@ -5,38 +5,32 @@
 ### AmpliconArchitect is best used through [AmpliconSuite-pipeline](https://github.com/AmpliconSuite/AmpliconSuite-pipeline)
 Installation instructions for AmpliconArchitect are provided here, but to prepare the inputs, invoke AA and classify the outputs, please do so by using [AmpliconSuite-pipeline](https://github.com/AmpliconSuite/AmpliconSuite-pipeline). 
 
-### Recent updates:
+### Changelog:
 
-### March 2026 update
+### 2026 updates
+- `1.5.r7` Updates `--no_cstats` mode to also not write to coverage stats file, and refines pair-support argument handling.
 - `1.5.r6` adds bugfixes for some `GRCh38_viral` ref amplicons having a graph decomposition source node at contig position 0, resulting in a MOSEK graph optimization solve failure and subsequent cycle decomposition crash.
-
-### February 2026 update
 - `1.5.r5` refactors `amplified_intervals.py` to gain a modest speedup on high coverage samples and allows single-end reads to contribute to support counts from externally provided SV VCFs.
 
-### December 2025 update
+### 2025 updates
 - `1.5.r4` provides a bugfix to prevent interval ends from going 1bp beyond the length of the chromosome. Primarily affects viral ref samples.
-
-### September 2025 update
 - `1.5.r3` adds logging support for `amplified_intervals.py` to clarify reasons for interval filtering. AA also now logs the fraction of amplicon weight decomposed.
-
-### April 2025 updates
 - `1.5.r2` handles missing read mates during SV discovery (if mate removed from bam after alignment)
 - `1.5.r1` adds the following
   - Bugfix to use of `--pair_support_min` arg
   - Bugfix to edge case crash when computed CN seg segments at position 0 of a chromosome
   - Logging improvements
 
-### December 2024 update
+### 2024 updates
 - `1.5.r0` adds the following features:
   - Caching of discordant read pairs during SV identification to reduce lookups on bam file. This gives a speedup of about 2x on average, but likely better returns on samples with incredibly large numbers of SVs.
-  - Optimizations to fetching of downsampled reads (alters results slightly as randomness of downsampled reads is updated)
+  - Optimizations to fetching of downsampled reads (alters results slightly as randomness of downsampled reads is updated).
   - Optimization to intersection detection implemented in AA. Results in a small speedup.
   - Add support for parsing of SV VCF generated in GRIDSS having extra column for normal.
   - Logging improvements
   - Typo fixes (PR by cmdcolin)
-
-
-**[Older update descriptions are available here.](https://docs.google.com/document/d/1jqnCs46hrpYGBGrZQFop31ezskyludxNJEQdZONwFdc/edit?usp=sharing)**
+  
+... **[Older update descriptions are available here.](https://docs.google.com/document/d/1jqnCs46hrpYGBGrZQFop31ezskyludxNJEQdZONwFdc/edit?usp=sharing)**
 
 ## Introduction
 Focal oncogene amplification and rearrangements drive tumor growth and evolution in multiple cancer types. Proposed mechanisms for focal amplification include extrachromosomal DNA (ecDNA) formation, breakage-fusion-bridge (BFB) mechanism, tandem duplications, chromothripsis and others.
