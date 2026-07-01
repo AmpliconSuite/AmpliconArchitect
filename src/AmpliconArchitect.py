@@ -173,10 +173,9 @@ summary_logger.propagate = False
 summary_logger.addHandler(logging.FileHandler(outName + '_summary.txt', 'w'))
 graph_logger = logging.getLogger('graph')
 graph_logger.propagate = False
-graph_logger.info("# AmpliconArchitect " + __version__ + " " + launch_datetime)
 cycle_logger = logging.getLogger('cycle')
 cycle_logger.propagate = False
-cycle_logger.info("# AmpliconArchitect " + __version__ + " " + launch_datetime)
+aa_output_header = "#AmpliconArchitect " + __version__
 class PrefixAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
         return '[%s] %s' % (self.extra['prefix'], msg), kwargs
@@ -416,6 +415,8 @@ for ig in irdgroups:
         cycle_handler = logging.FileHandler(amplicon_name + '_cycles.txt', 'w')
         graph_logger.addHandler(graph_handler)
         cycle_logger.addHandler(cycle_handler)
+        graph_logger.info(aa_output_header)
+        cycle_logger.info(aa_output_header)
         bamFileb2b.interval_filter_vertices(ilist, amplicon_name=amplicon_name, runmode=args.runmode)
         graph_logger.removeHandler(graph_handler)
         cycle_logger.removeHandler(cycle_handler)
