@@ -76,6 +76,7 @@ def call_mosek_scopt(n, m, asub, aval, coeff_c, coeff_f, coeff_g, const_h):
     with mosek.Env() as env:
         with env.Task() as task:
             task.set_Stream(mosek.streamtype.log, moseklogfunc)
+            task.putintparam(mosek.iparam.num_threads, 1)
 
             numvar = n + m
             numcon = 2 * n 
@@ -129,6 +130,7 @@ The condition x>=0 is implicit by x appearing in the logarithm.
 def call_mosek_acc(n, m, asub, aval, coeff_c, coeff_f):
     with mosek.Task() as task:
         task.set_Stream(mosek.streamtype.log, moseklogfunc)
+        task.putintparam(mosek.iparam.num_threads, 1)
 
         task.appendvars(2*(n + m))
         task.appendcons(2*n)
@@ -187,6 +189,7 @@ def call_mosek_fusion(n, m, asub, aval, coeff_c, coeff_f):
     from mosek.fusion import Model, Domain, Expr, Matrix, ObjectiveSense, SolutionStatus
     with Model() as M:
         M.setLogHandler(fusionlogger())
+        M.setSolverParam("numThreads", 1)
 
         x = M.variable(n + m)
         t = M.variable(n + m)

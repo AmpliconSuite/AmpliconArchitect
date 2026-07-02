@@ -288,7 +288,7 @@ A sequence edge from `v1 = chrom:start-` to `v2 = chrom:end+` represents the int
 
 ## Phase 6: Copy-Number Optimization
 
-**File:** `mosek_solver.py`
+**Files:** `mosek_solver.py`, `clarabel_solver.py`
 
 ### 6.1 Problem formulation
 
@@ -338,13 +338,18 @@ x_seq[i] = Σ x_bp[j]  for all j incident to v2(i)
 
 ### 6.4 Solver dispatch
 
-| MOSEK version | API used | Notes |
-|---|---|---|
-| 8 | `scopt` (self-concordant optimizer) | Includes `g_i, h_i` normalisation |
-| 9 | Fusion API, primal exponential cone | Dropped `h_i` |
-| ≥ 10 | ACC (affine conic constraints) | `minimize c^T*x − Σ f_i*log(x_i)`, `x > 0` implicit |
+AA uses MOSEK by default. If MOSEK errors or returns its failure fallback copy counts, AA retries the same optimization
+with the license-free Clarabel backend. The CLI argument `--solver clarabel` uses Clarabel directly. Both backends are
+configured to use one solver thread.
 
-Tolerance (v10+): `intpnt_co_tol_near_rel = 1e5`. On solver failure, falls back to returning `coeff_c` as copy numbers and logs the inputs to a JSON file.
+| Solver | API used | Notes |
+|---|---|---|
+| MOSEK 8 | `scopt` (self-concordant optimizer) | Includes `g_i, h_i` normalisation |
+| MOSEK 9 | Fusion API, primal exponential cone | Dropped `h_i` |
+| MOSEK ≥ 10 | ACC (affine conic constraints) | `minimize c^T*x − Σ f_i*log(x_i)`, `x > 0` implicit |
+| Clarabel | Python API, primal exponential cone | License-free fallback; solves the same MOSEK ≥ 10 formulation |
+
+MOSEK tolerance (v10+): `intpnt_co_tol_near_rel = 1e5`. On MOSEK solver failure, falls back to returning `coeff_c` as copy numbers and logs the inputs to a JSON file. Clarabel uses `max_iter = 1000` and retries with modestly relaxed tolerances, then with presolve/equilibration disabled. Clarabel accepts `Solved` or `AlmostSolved` only if the copy counts are finite, non-negative, have finite objective value, and pass a flow-residual check. On Clarabel solver failure, falls back to returning `coeff_c`.
 
 **Output:** `res[0:n]` = sequence edge copy counts, `res[n:n+m]` = breakpoint/concordant/source edge copy counts.
 

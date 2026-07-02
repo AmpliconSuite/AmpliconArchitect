@@ -23,6 +23,7 @@ import pysam
 import math
 import copy
 from collections import defaultdict
+import clarabel_solver
 import mosek_solver
 import sys
 import numpy as np
@@ -71,7 +72,7 @@ class bam_to_breakpoint():
     def __init__(self, bamfile, sample_name='', read_length=100, max_insert=400, insert_size=300, num_sdevs=3,
         window_size=10000, min_coverage=30, pair_support=-1, pair_support_min=2, downsample=-1, coverage_stats=None,
         coverage_windows=None, sensitivems=False, span_coverage=True, tstart=0, ext_dnlist=None, foldback_pair_support_min=None,
-        write_coverage_stats=True):
+        write_coverage_stats=True, solver='mosek'):
         self.bamfile = bamfile
         self.sample_name = sample_name
         self.window_size = window_size
@@ -87,6 +88,7 @@ class bam_to_breakpoint():
         self.cc_slow_time = 0
         self.cc_fast_time = 0
         self.decomp_time = 0
+        self.solver = solver
         self.gc_scale = defaultdict(lambda: 1.0) #self.gc_scaling()
         self.gc_set = False
         self.ms_window_size = 10000
@@ -2389,7 +2391,19 @@ class bam_to_breakpoint():
         coeff_c = [C * li / self.read_length for li in l] + [(self.max_insert) * C / 2.0 / self.read_length for e in bplist]
 
         # Solve the optimization problem
-        res = mosek_solver.call_mosek(n, m, asub, aval, coeff_c, coeff_f, coeff_g, const_h)
+        if self.solver == 'mosek':
+            try:
+                res = mosek_solver.call_mosek(n, m, asub, aval, coeff_c, coeff_f, coeff_g, const_h)
+                if len(res) == len(coeff_c) and all(a == b for a, b in zip(res, coeff_c)):
+                    logging.warning("MOSEK returned its failure fallback copy counts. Retrying with Clarabel.")
+                    res = clarabel_solver.call_clarabel(n, m, asub, aval, coeff_c, coeff_f)
+            except Exception as e:
+                logging.warning("MOSEK failed with error '{}'. Retrying with Clarabel.".format(e))
+                res = clarabel_solver.call_clarabel(n, m, asub, aval, coeff_c, coeff_f)
+        elif self.solver == 'clarabel':
+            res = clarabel_solver.call_clarabel(n, m, asub, aval, coeff_c, coeff_f)
+        else:
+            raise ValueError("Unsupported solver: {}".format(self.solver))
                 
 
         wehc = {}
