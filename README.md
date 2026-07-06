@@ -8,6 +8,9 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
 ### Changelog:
 
 ### 2026 updates
+- `1.6.r0` adds the following:
+  - Adds **Clarabel**, a free, open-source solver, as an alternative to Mosek for AA's copy-number optimization. Clarabel is used automatically whenever no Mosek license is present, so a Mosek license is no longer required to run AA. The solver can be selected explicitly with `--solver {mosek,clarabel}`; results are nearly identical between the two. See the [copy-number solver section](#copy-number-solver--do-i-need-a-mosek-license-short-answer-no).
+  - Writes a version header line (`#AmpliconArchitect 1.6.r0`) to the graph and cycles output files, allowing downstream tools (e.g. AmpliconClassifier) to identify the generating AA version.
 - `1.5.r7` Updates `--no_cstats` mode to also not write to coverage stats file, and refines pair-support argument handling.
 - `1.5.r6` adds bugfixes for some `GRCh38_viral` ref amplicons having a graph decomposition source node at contig position 0, resulting in a MOSEK graph optimization solve failure and subsequent cycle decomposition crash.
 - `1.5.r5` refactors `amplified_intervals.py` to gain a modest speedup on high coverage samples and allows single-end reads to contribute to support counts from externally provided SV VCFs.
@@ -115,6 +118,14 @@ Available data repo annotations:
 * mm10 (GRCm38)
 
 On the data repo download page, the suffix `indexed` indicates the BWA index is packaged as well, which is only needed if also using the packaged fasta for alignment.
+
+## Copy-number solver — do I need a Mosek license? (Short answer: no)
+
+AmpliconArchitect's copy-number optimization uses **Clarabel**, a free, open-source solver, by default whenever no Mosek license is present. **You no longer need to obtain a Mosek license to run AmpliconArchitect.** Mosek is still supported and is used automatically if a license is found (or select it explicitly with `--solver mosek`), but in our testing the results are nearly identical between the two solvers, with only negligible differences — the choice only affects runtime, by a few minutes per sample at most.
+
+If you have a Mosek license (free for academic use), place it at `$HOME/mosek/mosek.lic` and AA will use it automatically; otherwise AA falls back to Clarabel with no configuration needed.
+
+AmpliconArchitect's copy-number objective contains logarithmic terms and is solved as an **exponential-cone program**. Clarabel, ECOS, and Mosek are the interior-point solvers that natively support this cone; for a benchmark comparison see Goulart & Chen, *"Clarabel: An interior-point solver for conic programs with quadratic objectives"* ([arXiv:2405.12762](https://arxiv.org/abs/2405.12762)), §5.2.2 ("CBLIB exponential cone problems"), where Clarabel and Mosek show broadly similar performance.
 
 ## Running AmpliconArchitect
 **[Please see the example commands here.](https://github.com/AmpliconSuite/AmpliconSuite-pipeline#running-ampliconsuite-pipeline)**
