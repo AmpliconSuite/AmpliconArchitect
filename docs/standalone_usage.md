@@ -30,7 +30,7 @@ sudo python2 get-pip.py
 ```
 3. **Python3 packages**: Note that [pysam](https://github.com/pysam-developers/pysam) version 0.9.0  or higher is required. Flask is optional.
 
-`pip3 install pysam Cython numpy scipy matplotlib future mosek Flask`
+`pip3 install pysam Cython numpy scipy matplotlib future mosek clarabel Flask`
 
 **... or for python 2:**
 
@@ -38,12 +38,12 @@ sudo python2 get-pip.py
 
 Note that 0.15.2 is the last version of pysam which appears to support pip2 installation, however AA itself supports the more recent versions.
 
-4. Configure the Mosek optimization tool:
+4. (Optional) Configure the Mosek optimization tool:
 ```bash
 mkdir -p $HOME/mosek/
-# Then please obtain license from https://www.mosek.com/products/academic-licenses/ or https://www.mosek.com/try/ and place in $HOME/mosek/
+# To use Mosek, obtain a license from https://www.mosek.com/products/academic-licenses/ or https://www.mosek.com/try/ and place it in $HOME/mosek/
 ```
-If you happen to be using the commercial version of the Mosek license (this is uncommon as Mosek is free for academic use), you will need the version which supports both PTON and PTS functions. 
+Mosek is not required. With the default `--solver mosek`, AA warns and retries with the license-free Clarabel solver if Mosek is unavailable or fails. Use `--solver clarabel` to skip Mosek entirely. If you use a commercial Mosek license (uncommon because Mosek is free for academic use), you need the version that supports both PTON and PTS functions.
 
 5. (Optional) Arial font for matplotlib:
 
@@ -99,4 +99,3 @@ This format of visualization makes it easy to discern the segments in the struct
     - Merge cycles with a common segment: Select cycle names and ments rank (NOT the ID displayed) in the order of segments played. For closed cycles, first segment rank is 0; for open walks, For n walks, first segment rank is 1 and so on.
     - Pivot cycle around inverted duplication: Pivot the portion of  cycle that connects two reversed occurrences of a duplicated meant without changing any genomic connections.
     - Undo last edit: Go back to previous state.
-

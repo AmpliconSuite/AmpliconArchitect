@@ -13,10 +13,10 @@ AmpliconArchitect reconstructs focal amplicon structures from WGS data. Given se
 3. Detects structural variant breakpoints from discordant read pairs
 4. Segments the amplified region into copy-number intervals via mean-shift
 5. Constructs a breakpoint graph (vertices = genomic positions with strand, edges = genomic segments or SVs)
-6. Assigns copy numbers to all edges via convex optimization (MOSEK)
+6. Assigns copy numbers to all edges via convex optimization (Mosek or Clarabel)
 7. Decomposes the weighted graph into cycles representing amplicon structures
 
-All source code is in `src/`. Entry point: `AmpliconArchitect.py`. Core processing: `bam_to_breakpoint.py`. Graph structures: `breakpoint_graph.py` + `abstract_graph.py`. Optimization: `mosek_solver.py`.
+All source code is in `src/`. Entry point: `AmpliconArchitect.py`. Core processing: `bam_to_breakpoint.py`. Graph structures: `breakpoint_graph.py` + `abstract_graph.py`. Optimization: `mosek_solver.py` and `clarabel_solver.py`.
 
 ---
 
