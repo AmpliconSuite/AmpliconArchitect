@@ -42,6 +42,7 @@ import random
 import re
 from past.builtins import xrange
 from functools import reduce
+from zlib import crc32
 
 from breakpoint_graph import *
 import ref_util as hg
@@ -165,7 +166,8 @@ class bam_to_breakpoint():
         s, e = min(s, chr_length - 1), min(e, chr_length - 1)
 
         for a in self.bamfile.fetch(c, s, e + 1):
-            if self.downsample_ratio == 1 or (hash(a.query_name) % 100) / 100.0 < self.downsample_ratio:
+            # Stable read-name sampling across processes and processor architectures.
+            if self.downsample_ratio == 1 or (crc32(a.query_name.encode("utf-8")) % 100) / 100.0 < self.downsample_ratio:
                 yield a
 
     def interval_coverage(self, i, clip=False, gcc=False):
