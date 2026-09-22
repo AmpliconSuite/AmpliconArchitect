@@ -8,6 +8,7 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
 ### Changelog:
 
 ### 2026 updates
+- `1.6.r1` makes read downsampling deterministic across runs by replacing Python's randomized read-name hash with CRC32.
 - `1.6.r0` adds the following:
   - Adds **Clarabel**, a free, open-source solver, as an alternative to Mosek for AA's copy-number optimization. If Mosek is unavailable or fails, AA warns and retries with Clarabel, so a Mosek license is no longer required. The solver can be selected explicitly with `--solver {mosek,clarabel}`; `--solver clarabel` skips Mosek entirely. Results are nearly identical between the two. See the [copy-number solver section](#copy-number-solver--do-i-need-a-mosek-license-short-answer-no).
   - Writes a version header line (`#AmpliconArchitect 1.6.r0`) to the graph and cycles output files, allowing downstream tools (e.g. AmpliconClassifier) to identify the generating AA version.
