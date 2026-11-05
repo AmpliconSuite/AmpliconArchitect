@@ -24,7 +24,6 @@ import math
 import copy
 from collections import defaultdict
 import clarabel_solver
-import mosek_solver
 import sys
 import numpy as np
 from scipy import stats
@@ -2395,6 +2394,7 @@ class bam_to_breakpoint():
         # Solve the optimization problem
         if self.solver == 'mosek':
             try:
+                import mosek_solver
                 res = mosek_solver.call_mosek(n, m, asub, aval, coeff_c, coeff_f, coeff_g, const_h)
                 if len(res) == len(coeff_c) and all(a == b for a, b in zip(res, coeff_c)):
                     logging.warning("MOSEK returned its failure fallback copy counts. Retrying with Clarabel.")
