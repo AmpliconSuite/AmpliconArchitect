@@ -8,6 +8,7 @@ Installation instructions for AmpliconArchitect are provided here, but to prepar
 ### Changelog:
 
 ### 2026 updates
+- `1.6.r2` imports Mosek only when the Mosek solver runs, so AA no longer crashes at startup if the Mosek Python package is missing.
 - `1.6.r1` makes read downsampling deterministic across runs by replacing Python's randomized read-name hash with CRC32.
 - `1.6.r0` adds the following:
   - Adds **Clarabel**, a free, open-source solver, as an alternative to Mosek for AA's copy-number optimization. If Mosek is unavailable or fails, AA warns and retries with Clarabel, so a Mosek license is no longer required. The solver can be selected explicitly with `--solver {mosek,clarabel}`; `--solver clarabel` skips Mosek entirely. Results are nearly identical between the two. See the [copy-number solver section](#copy-number-solver--do-i-need-a-mosek-license-short-answer-no).
