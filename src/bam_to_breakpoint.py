@@ -2442,7 +2442,7 @@ class bam_to_breakpoint():
         if len(ilist0) >= 10:
             lenlist = len(ilist0)
         all_msv_cat = reduce(lambda x, y: x+y, all_msv, [])
-        oncolist = ','.join(set([a[1].info['Name'] for a in ilist.intersection(hg.oncogene_list)]))+','
+        oncolist = ','.join(sorted(set([a[1].info['Name'] for a in ilist.intersection(hg.oncogene_list)])))+','
         istr = ','.join([i.chrom + ':' + str(i.start) + '-' + str(i.end) for i in ilist])
         summary_logger.info("TotalIntervalSize = " + str(sum([a.size() for a in ilist])))
         summary_logger.info("AmplifiedIntervalSize = " + str(sum([seqlist[si].v2.pos - seqlist[si].v1.pos for si in range(n) if res[si] >= 2.5])))

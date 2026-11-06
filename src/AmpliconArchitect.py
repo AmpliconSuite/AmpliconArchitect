@@ -409,7 +409,7 @@ for ig in irdgroups:
     ilist1 = hg.interval_list([a[0] for a in ilist.merge_clusters()])
     istr = ','.join([i.chrom + ':' + str(i.start) + '-' + str(i.end) for i in ilist1])
     summary_logger.info("Intervals = " + str(istr))
-    oncolist = ','.join(set([a[1].info['Name'] for a in ilist1.intersection(hg.oncogene_list)]))+','
+    oncolist = ','.join(sorted(set([a[1].info['Name'] for a in ilist1.intersection(hg.oncogene_list)])))+','
     summary_logger.info("OncogenesAmplified = " + str(oncolist))
     amplicon_name = outName + '_amplicon' + str(amplicon_id)
     if args.runmode in ['FULL', 'CYCLES', 'BPGRAPH']:
