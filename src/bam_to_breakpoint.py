@@ -967,7 +967,7 @@ class bam_to_breakpoint():
                 d2reads[(a.query_name, a.is_read1, a.is_reverse, not secondary)] = a
 
         dpairs = defaultdict(lambda: [], {})
-        for aa in rSet:
+        for aa in sorted(rSet):
             if aa in multi_r:
                 continue
             a1 = d1reads[aa]
