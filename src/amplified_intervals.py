@@ -161,34 +161,34 @@ if args.bam != "":
     global_median_cov = bamFileb2b.median_coverage()[0]
     global_median_cov_time = time.time() - global_median_cov_start
     logging.info("Global median coverage calculation took {:.2f} seconds".format(global_median_cov_time))
+    if global_median_cov == 0:
+        zero_coverage_error = global_names.ZERO_COVERAGE_ERROR.format(args.bam)
+        logging.error(zero_coverage_error)
+        if args.logfile:  # logging only writes to the file in this case, so also tell the user directly
+            sys.stderr.write("ERROR: {}\n".format(zero_coverage_error))
+        sys.exit(1)
 
     pre_int_list = []
     filtered_count = 0
     interval_processing_start = time.time()
 
     for r in rdList:
-        try:
-            # OPTIMIZATION: Compute interval median coverage once and reuse
-            interval_median_cov = bamFileb2b.median_coverage(refi=r)[0]
-            chrom_cov_ratio = interval_median_cov / global_median_cov
+        # OPTIMIZATION: Compute interval median coverage once and reuse
+        interval_median_cov = bamFileb2b.median_coverage(refi=r)[0]
+        chrom_cov_ratio = interval_median_cov / global_median_cov
 
-            # print("chrom ratio " + r.chrom + " " + str(chrom_cov_ratio))
-            if float(r.info[-1]) > GAIN + 2 * max(1.0, chrom_cov_ratio) - 2 and chrom_cov_ratio > 0:
-                if r.size() < 10000000 or float(r.info[-1]) > 1.5 * GAIN:
-                    pre_int_list.append(r)
-                else:
-                    filtered_count += 1
-
-            elif float(r.info[-1]) > 1 and args.ref == "GRCh38_viral" and not r.chrom.startswith("chr"):
+        # print("chrom ratio " + r.chrom + " " + str(chrom_cov_ratio))
+        if float(r.info[-1]) > GAIN + 2 * max(1.0, chrom_cov_ratio) - 2 and chrom_cov_ratio > 0:
+            if r.size() < 10000000 or float(r.info[-1]) > 1.5 * GAIN:
                 pre_int_list.append(r)
-
             else:
                 filtered_count += 1
 
-        except ZeroDivisionError:
-            logging.error("zero division error", r.chrom, args.ref, float(r.info[-1]))
+        elif float(r.info[-1]) > 1 and args.ref == "GRCh38_viral" and not r.chrom.startswith("chr"):
+            pre_int_list.append(r)
+
+        else:
             filtered_count += 1
-            continue
 
     interval_processing_time = time.time() - interval_processing_start
     bam_filter_total_time = time.time() - bam_filter_start

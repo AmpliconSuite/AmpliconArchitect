@@ -311,6 +311,10 @@ bamFileb2b = b2b.bam_to_breakpoint(bamFile, sample_name=outName, num_sdevs=args.
                                    sensitivems=(args.sensitivems == 'True'), span_coverage=(args.cbam is None), tstart=TSTART,
                                    ext_dnlist=ext_dnlist, foldback_pair_support_min=args.foldback_pair_support_min,
                                    write_coverage_stats=not args.no_cstats, solver=args.solver)
+if bamFileb2b.median_coverage()[0] == 0:
+    logging.error(global_names.ZERO_COVERAGE_ERROR.format(args.bam))
+    sys.exit(1)
+
 logging.info("Pair support requirement: " + str(bamFileb2b.pair_support))
 segments = []
 
